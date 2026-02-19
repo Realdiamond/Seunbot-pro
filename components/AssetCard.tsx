@@ -34,30 +34,30 @@ export default function AssetCard({ asset }: { asset: Asset }) {
         </div>
 
         <div className="flex items-center gap-2 mb-3">
-          <span className={`text-sm font-bold px-3 py-1 rounded ${signalColors[asset.signal]}`}>
-            {asset.signal}
+          <span className={`text-sm font-bold px-3 py-1 rounded ${asset.signal ? signalColors[asset.signal] : 'bg-gray-100 text-gray-800'}`}>
+            {asset.signal || 'N/A'}
           </span>
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            Strength: <span className="font-semibold text-gray-900 dark:text-white">{asset.strength.toFixed(1)}</span>/5.0
+            Strength: <span className="font-semibold text-gray-900 dark:text-white">{asset.strength?.toFixed(1) || '0.0'}</span>/5.0
           </span>
         </div>
 
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">Entry:</span>
-            <span className="font-semibold text-gray-900 dark:text-white">{asset.entry.toLocaleString()}</span>
+            <span className="font-semibold text-gray-900 dark:text-white">{asset.entry?.toLocaleString() || 'N/A'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">Stop Loss:</span>
-            <span className="font-semibold text-red-600 dark:text-red-400">{asset.stopLoss}%</span>
+            <span className="font-semibold text-red-600 dark:text-red-400">{asset.stopLoss ?? 'N/A'}%</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">TP1:</span>
-            <span className="font-semibold text-green-600 dark:text-green-400">{asset.takeProfit1}%</span>
+            <span className="font-semibold text-green-600 dark:text-green-400">{asset.takeProfit1 ?? 'N/A'}%</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">TP2:</span>
-            <span className="font-semibold text-green-600 dark:text-green-400">{asset.takeProfit2}%</span>
+            <span className="font-semibold text-green-600 dark:text-green-400">{asset.takeProfit2 ?? 'N/A'}%</span>
           </div>
         </div>
 
