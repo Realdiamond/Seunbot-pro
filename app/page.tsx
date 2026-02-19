@@ -63,7 +63,7 @@ type SignalFilter = 'BUY' | 'SELL';
 export default function Home() {
   const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed on mobile
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [signalFilter, setSignalFilter] = useState<SignalFilter>('BUY');
   const [isDark, setIsDark] = useState(true);
@@ -135,9 +135,17 @@ export default function Home() {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0b0f16] text-white' : 'bg-[#f6f6f8] text-slate-900'}`}>
       <div className="flex h-screen overflow-hidden">
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
         <aside
-          className={`border-r transition-all duration-300 ${
-            sidebarOpen ? 'w-64' : 'w-20'
+          className={`border-r transition-all duration-300 fixed lg:static inset-y-0 left-0 z-50 ${
+            sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 w-0 lg:w-20'
           } ${isDark ? 'border-white/5 bg-[#0a0f16]' : 'border-gray-200 bg-white'}`}
         >
           <div className="h-full flex flex-col">
@@ -151,9 +159,15 @@ export default function Home() {
               </div>
               <button
                 onClick={() => setSidebarOpen((prev) => !prev)}
-                className={`h-9 w-9 rounded-lg border transition-colors ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-300 bg-gray-100 text-gray-600 hover:text-slate-900'}`}
+                className={`h-9 w-9 rounded-lg border transition-colors flex items-center justify-center ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-300 bg-gray-100 text-gray-600 hover:text-slate-900'}`}
               >
-                {sidebarOpen ? '⟨' : '⟩'}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {sidebarOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  )}
+                </svg>
               </button>
             </div>
 
@@ -192,8 +206,16 @@ export default function Home() {
           </div>
         </aside>
 
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <header className={`flex items-center justify-between border-b px-6 py-4 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
+        <main className="flex-1 flex flex-col overflow-hidden w-full">
+          <header className={`flex items-center justify-between border-b px-4 lg:px-6 py-4 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className={`lg:hidden h-9 w-9 rounded-lg border mr-3 flex items-center justify-center ${isDark ? 'border-white/10 bg-white/5 text-gray-300' : 'border-gray-300 bg-gray-100 text-gray-600'}`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
             <div className="flex items-center gap-3">
               <h1 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Market Signals</h1>
             </div>
@@ -239,16 +261,16 @@ export default function Home() {
           </header>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="px-6 py-5">
+            <div className="px-4 lg:px-6 py-5">
               <div className={`text-xs mb-4 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Home / Dashboard</div>
 
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex-1 min-w-[240px]">
+                  <div className="flex-1 min-w-[200px]">
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Search symbols (e.g., TSLA, BTC)..."
+                        placeholder="Search symbols..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className={`w-full rounded-lg border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${isDark ? 'border-white/10 bg-[#0f1520] text-white placeholder-gray-500' : 'border-gray-300 bg-white text-slate-900 placeholder-gray-400'}`}
@@ -263,23 +285,25 @@ export default function Home() {
                   </button>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                  {markets.map((market) => (
-                    <button
-                      key={market}
-                      onClick={() => setSelectedMarket(market)}
-                      className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                        selectedMarket === market
-                          ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30'
-                          : isDark ? 'border border-white/10 text-gray-400 hover:text-white hover:bg-white/5' : 'border border-gray-300 text-gray-600 hover:text-slate-900 hover:bg-slate-100'
-                      }`}
-                    >
-                      {market}
-                    </button>
-                  ))}
+                <div className="flex flex-col lg:flex-row lg:flex-wrap items-start lg:items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {markets.map((market) => (
+                      <button
+                        key={market}
+                        onClick={() => setSelectedMarket(market)}
+                        className={`rounded-lg px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium transition-all ${
+                          selectedMarket === market
+                            ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30'
+                            : isDark ? 'border border-white/10 text-gray-400 hover:text-white hover:bg-white/5' : 'border border-gray-300 text-gray-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        {market}
+                      </button>
+                    ))}
+                  </div>
                   
-                  <div className="ml-auto flex items-center gap-3">
-                    <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Filter by Signal:</span>
+                  <div className="flex items-center gap-3 w-full lg:w-auto lg:ml-auto">
+                    <span className={`text-xs lg:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Signal:</span>
                     <div className={`flex rounded-lg border p-1 ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-300 bg-white'}`}>
                       <button
                         onClick={() => setSignalFilter('BUY')}
