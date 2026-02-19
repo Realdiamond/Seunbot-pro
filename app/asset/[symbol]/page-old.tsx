@@ -45,7 +45,8 @@ export default function AssetPage() {
 
     setTimeout(() => {
       const aiResponse = getMockChatResponse(chatInput);
-      setChatMessages((prev) => [...prev, aiResponse]);
+      const aiMessage: ChatMessage = { role: 'assistant', content: aiResponse };
+      setChatMessages((prev) => [...prev, aiMessage]);
     }, 500);
   };
 
@@ -102,7 +103,7 @@ export default function AssetPage() {
           <div className="flex flex-wrap items-center gap-6 divide-x divide-[#2b2839]">
             <div className="px-4 first:pl-0">
               <p className="text-sm text-gray-400 mb-1">Current Price</p>
-              <p className="text-xl font-bold text-white">${asset.entry.toLocaleString()}</p>
+              <p className="text-xl font-bold text-white">${asset.entry?.toLocaleString() || 'N/A'}</p>
             </div>
             <div className="px-4">
               <p className="text-sm text-gray-400 mb-1">24h Change</p>
@@ -319,12 +320,12 @@ export default function AssetPage() {
                 <div className="mb-2">
                   <div className="flex justify-between text-xs font-medium mb-1.5">
                     <span className="text-gray-400">Confidence</span>
-                    <span className="text-white">{asset.strength} / 5.0</span>
+                    <span className="text-white">{asset.strength || 0} / 5.0</span>
                   </div>
                   <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-[#3713ec] to-[#0bda6c] rounded-full"
-                      style={{ width: `${(asset.strength / 5) * 100}%` }}
+                      style={{ width: `${((asset.strength || 0) / 5) * 100}%` }}
                     ></div>
                   </div>
                 </div>
@@ -333,7 +334,7 @@ export default function AssetPage() {
                 <div className="col-span-2">
                   <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Entry Zone</p>
                   <p className="text-2xl font-bold text-white font-mono tracking-tight">
-                    ${asset.entry.toLocaleString()} <span className="text-sm text-gray-400 font-sans font-normal">market</span>
+                    ${asset.entry?.toLocaleString() || 'N/A'} <span className="text-sm text-gray-400 font-sans font-normal">market</span>
                   </p>
                 </div>
                 <div className="bg-[#25232e] p-3 rounded-lg border border-[#2b2839]">
@@ -341,7 +342,7 @@ export default function AssetPage() {
                     <span className="size-1.5 rounded-full bg-[#ff4d4d]"></span>
                     <p className="text-xs text-gray-500 font-medium">Stop Loss</p>
                   </div>
-                  <p className="text-lg font-bold text-[#ff4d4d] font-mono">${asset.stopLoss.toLocaleString()}</p>
+                  <p className="text-lg font-bold text-[#ff4d4d] font-mono">${asset.stopLoss?.toLocaleString() || 'N/A'}</p>
                   <p className="text-[10px] text-gray-400">-3.35% Risk</p>
                 </div>
                 <div className="bg-[#25232e] p-3 rounded-lg border border-[#2b2839]">
@@ -357,14 +358,14 @@ export default function AssetPage() {
                     <span className="size-1.5 rounded-full bg-[#0bda6c]"></span>
                     <p className="text-xs text-gray-500 font-medium">TP 1</p>
                   </div>
-                  <p className="text-lg font-bold text-[#0bda6c] font-mono">${asset.takeProfit1.toLocaleString()}</p>
+                  <p className="text-lg font-bold text-[#0bda6c] font-mono">${asset.takeProfit1?.toLocaleString() || 'N/A'}</p>
                 </div>
                 <div className="bg-[#25232e] p-3 rounded-lg border border-[#2b2839]">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="size-1.5 rounded-full bg-[#0bda6c]"></span>
                     <p className="text-xs text-gray-500 font-medium">TP 2</p>
                   </div>
-                  <p className="text-lg font-bold text-[#0bda6c] font-mono">${asset.takeProfit2.toLocaleString()}</p>
+                  <p className="text-lg font-bold text-[#0bda6c] font-mono">${asset.takeProfit2?.toLocaleString() || 'N/A'}</p>
                 </div>
               </div>
               <div className="p-4 border-t border-[#2b2839]">
