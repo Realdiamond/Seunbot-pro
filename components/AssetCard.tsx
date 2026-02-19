@@ -62,7 +62,7 @@ export default function AssetCard({ asset }: { asset: Asset }) {
         </div>
 
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-500">
-          Updated: {formatDate(asset.updatedAt)}
+          Updated: {asset.updatedAt ? formatDate(asset.updatedAt) : 'N/A'}
         </div>
       </div>
     </Link>
