@@ -20,12 +20,10 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
             isUser ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
           }`}
         >
-          {message.timestamp
-            ? new Date(message.timestamp).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : ''}
+          {new Date(message.timestamp).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
         </p>
       </div>
     </div>

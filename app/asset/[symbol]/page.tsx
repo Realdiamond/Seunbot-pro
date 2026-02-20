@@ -68,7 +68,7 @@ export default function AssetPage() {
       if (line.includes('┌')) {
         const tableTitle = line.replace(/[┌─┐]/g, '').trim();
         const sections: any[] = [];
-        let currentSection: { title: string; items: any[] } = { title: '', items: [] };
+        let currentSection: { title: string; items: string[] } = { title: '', items: [] };
         
         i++; // Skip the top border
         
@@ -627,6 +627,9 @@ export default function AssetPage() {
           <div className={`p-5 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg p-2 shadow-lg shadow-purple-500/20">
+                  <span className="text-white text-lg">📊</span>
+                </div>
                 <div>
                   <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Comprehensive Analysis</h3>
                   <p className={`text-xs uppercase tracking-wider font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Multi-Timeframe Market Intelligence</p>
@@ -634,10 +637,10 @@ export default function AssetPage() {
               </div>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${isDark ? 'border-white/10 hover:bg-white/10 text-gray-400 hover:text-white' : 'border-gray-300 hover:bg-slate-200 text-gray-600 hover:text-slate-900'}`}
+                className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-gray-400 hover:text-white' : 'hover:bg-slate-200 text-gray-600 hover:text-slate-900'}`}
                 title="Analysis Settings"
               >
-                {showSettings ? 'Hide Settings' : 'Show Settings'}
+                <span className="text-xl">⚙️</span>
               </button>
             </div>
             
@@ -741,6 +744,7 @@ export default function AssetPage() {
                 <div className={`rounded-lg border p-6 ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
+                      <span className="text-4xl">🎯</span>
                       <div>
                         <h4 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Trading Signal</h4>
                         <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
@@ -791,6 +795,7 @@ export default function AssetPage() {
                 <div className={`rounded-lg border overflow-hidden ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
                   <div className={`p-5 border-b ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
                     <div className="flex items-center gap-2">
+                      <span className="text-2xl">📊</span>
                       <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Multi-Timeframe Analysis</h4>
                     </div>
                   </div>
@@ -837,6 +842,7 @@ export default function AssetPage() {
                 {/* Cycle Analysis Detailed */}
                 <div className={`rounded-lg border p-6 ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
                   <div className="flex items-center gap-2 mb-5">
+                    <span className="text-2xl">🔄</span>
                     <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Detailed Cycle Analysis</h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -875,6 +881,7 @@ export default function AssetPage() {
                 <div className={`rounded-lg border p-6 ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
+                      <span className="text-2xl">📄</span>
                       <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Comprehensive Report</h4>
                     </div>
                   </div>
