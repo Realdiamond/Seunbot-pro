@@ -42,6 +42,7 @@ export default function AssetPage() {
   const [chatInput, setChatInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'analysis' | 'chat'>('analysis');
   
   // Analysis Settings & Data
@@ -52,6 +53,7 @@ export default function AssetPage() {
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
 
   // Parse and render the comprehensive report
   const renderReport = (report: string) => {
@@ -68,7 +70,7 @@ export default function AssetPage() {
       if (line.includes('┌')) {
         const tableTitle = line.replace(/[┌─┐]/g, '').trim();
         const sections: any[] = [];
-        let currentSection: { title: string; items: string[] } = { title: '', items: [] };
+        let currentSection: { title: string; items: any[] } = { title: '', items: [] };
         
         i++; // Skip the top border
         
@@ -457,13 +459,13 @@ export default function AssetPage() {
   return (
     <div className={`min-h-screen flex flex-col ${isDark ? 'bg-[#0b0f16] text-white' : 'bg-[#f6f6f8] text-slate-900'}`}>
       {/* Header */}
-      <header className={`flex items-center justify-between border-b px-6 py-3 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-3">
-            <div className="size-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white">
-              <span className="text-[20px]">🤖</span>
+      <header className={`flex items-center justify-between border-b px-4 md:px-6 py-3 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
+        <div className="flex items-center gap-4 md:gap-8">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="size-7 md:size-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white">
+              <span className="text-base md:text-[20px]">🤖</span>
             </div>
-            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>SeunBot Pro</h2>
+            <h2 className={`text-base md:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>SeunBot Pro</h2>
           </div>
           <div className="hidden md:flex relative">
             <div className="relative">
@@ -517,7 +519,7 @@ export default function AssetPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 md:gap-4 lg:gap-6">
           <nav className="hidden lg:flex items-center gap-6">
             <Link href="/" className={`text-sm font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}>Dashboard</Link>
             <Link href="/chat" className={`text-sm font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}>AI Chat</Link>
@@ -526,58 +528,90 @@ export default function AssetPage() {
           <div className={`h-6 w-px hidden lg:block ${isDark ? 'bg-white/10' : 'bg-gray-300'}`}></div>
           <button
             onClick={() => setIsDark(!isDark)}
-            className={`px-3 py-2 rounded-lg border transition-colors ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'bg-gray-200 text-slate-900 hover:bg-gray-300'}`}
+            className={`h-9 w-9 rounded-lg transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}
           >
             {isDark ? '☀️' : '🌙'}
           </button>
-          <div className={`size-9 rounded-full border ${isDark ? 'bg-white/10 border-white/10' : 'bg-gray-300 border-gray-400'}`}></div>
+          <div className="relative">
+            <button
+              onClick={() => setNotificationOpen(!notificationOpen)}
+              className={`h-9 w-9 rounded-lg relative transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}
+            >
+              🔔
+              <span className="absolute top-1 right-1 h-2 w-2 bg-teal-500 rounded-full"></span>
+            </button>
+            {notificationOpen && (
+              <div className={`absolute right-0 mt-2 w-80 rounded-lg border shadow-xl z-50 ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
+                <div className={`p-4 border-b ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Notifications</h3>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  <div className={`p-4 border-b ${isDark ? 'hover:bg-white/5 border-white/5' : 'hover:bg-slate-50 border-gray-100'}`}>
+                    <p className={`text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>New BUY signal: {symbol}</p>
+                    <p className="text-xs text-gray-500">2 minutes ago</p>
+                  </div>
+                  <div className={`p-4 border-b ${isDark ? 'hover:bg-white/5 border-white/5' : 'hover:bg-slate-50 border-gray-100'}`}>
+                    <p className={`text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>Analysis updated for {symbol}</p>
+                    <p className="text-xs text-gray-500">15 minutes ago</p>
+                  </div>
+                  <div className={`p-4 ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
+                    <p className={`text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>Market analysis updated</p>
+                    <p className="text-xs text-gray-500">1 hour ago</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col p-4 md:p-6 lg:px-8 max-w-[1600px] mx-auto w-full gap-6">
         {/* Asset Header */}
-        <section className={`flex flex-wrap items-center justify-between gap-4 p-5 rounded-xl shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
-          <div className="flex items-center gap-4">
-            <div className="size-12 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
-              <span className="text-2xl">₿</span>
+        <section className={`flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-6 p-6 md:p-6 lg:p-8 rounded-xl shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="size-10 md:size-12 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
+              <span className="text-xl md:text-2xl">₿</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{asset.name}</h1>
-                <span className={`text-sm font-medium px-2 py-0.5 rounded ${isDark ? 'text-gray-400 bg-white/5' : 'text-gray-600 bg-slate-100'}`}>{asset.symbol}</span>
+                <h1 className={`text-lg md:text-xl lg:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{asset.name}</h1>
+                <span className={`text-xs md:text-sm font-medium px-2 py-0.5 rounded ${isDark ? 'text-gray-400 bg-white/5' : 'text-gray-600 bg-slate-100'}`}>{asset.symbol}</span>
               </div>
               <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Asset Intelligence Report</p>
             </div>
           </div>
-          <div className={`flex flex-wrap items-center gap-6 divide-x ${isDark ? 'divide-[#2b2839]' : 'divide-gray-300'}`}>
-            <div className="px-4 first:pl-0">
-              <p className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Current Price</p>
-              <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{asset.entry ? `$${asset.entry.toLocaleString()}` : '-'}</p>
+          <div className={`w-full md:w-auto grid grid-cols-3 md:flex md:flex-wrap md:items-center gap-2 md:gap-0 md:divide-x ${isDark ? 'md:divide-[#2b2839]' : 'md:divide-gray-300'}`}>
+            <div className="md:px-2 lg:px-4 md:first:pl-0">
+              <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Current Price</p>
+              <p className={`text-base md:text-lg lg:text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{asset.entry ? `$${asset.entry.toLocaleString()}` : '-'}</p>
             </div>
-            <div className="px-4">
-              <p className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>24h Change</p>
-              <div className="flex items-center gap-1 text-[#0bda6c]">
+            <div className="text-center md:text-left md:px-2 lg:px-4">
+              <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>24h Change</p>
+              <div className="flex items-center justify-center md:justify-start gap-1 text-[#0bda6c]">
                 <span>↗</span>
-                <span className="text-lg font-bold">+2.45%</span>
+                <span className="text-sm md:text-base lg:text-lg font-bold">+2.45%</span>
               </div>
             </div>
-            <div className="px-4">
-              <p className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>24h Volume</p>
-              <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>$34.2B</p>
+            <div className="text-right md:text-left md:px-2 lg:px-4">
+              <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>24h Volume</p>
+              <p className={`text-sm md:text-base lg:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>$34.2B</p>
             </div>
-            <div className="px-4 hidden sm:block">
-              <p className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Market Cap</p>
-              <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>$1.2T</p>
+            <div className="md:px-2 lg:px-4 hidden sm:block">
+              <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Market Cap</p>
+              <p className={`text-sm md:text-base lg:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>$1.2T</p>
             </div>
           </div>
         </section>
 
-        {/* Chart Section - Full Width */}
-        <div className={`rounded-xl flex flex-col h-[500px] shadow-sm overflow-hidden ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+        {/* Chart Section + Signal Intelligence - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Chart Section - 65-70% (8 columns) */}
+          <div className="lg:col-span-8">
+            <div className={`rounded-xl flex flex-col h-[500px] shadow-sm overflow-hidden ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
               <div className={`flex items-center justify-between border-b p-4 ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
                 <div className={`flex items-center gap-2 p-1 rounded-lg ${isDark ? 'bg-[#0f1520] border border-white/10' : 'bg-gray-200'}`}>
-                  {(['Monthly', 'Weekly', 'Daily'] as Timeframe[]).map((tf) => (
+                  {(['Monthly', 'Weekly', 'Daily', 'H4'] as Timeframe[]).map((tf) => (
                     <button
                       key={tf}
                       onClick={() => setTimeframe(tf)}
@@ -592,13 +626,13 @@ export default function AssetPage() {
                   ))}
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className={`flex items-center gap-2 text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                  <div className="flex items-center gap-2">
                     <span className="size-2 rounded-full bg-[#0bda6c]"></span>
-                    Market Open
+                    <span className={`hidden md:inline text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Market Open</span>
                   </div>
                   <button 
                     onClick={() => setIsFullscreen(!isFullscreen)}
-                    className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/5 text-gray-500' : 'hover:bg-slate-100 text-gray-600'}`}
+                    className={`hidden md:flex p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/5 text-gray-500' : 'hover:bg-slate-100 text-gray-600'}`}
                     title="Toggle Fullscreen"
                   >
                     <span className="text-xl">{isFullscreen ? '✕' : '⛶'}</span>
@@ -621,15 +655,119 @@ export default function AssetPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Signal Intelligence - 30-35% (4 columns) */}
+          <div className="lg:col-span-4">
+            <div className={`rounded-xl border border-teal-500/30 shadow-[0_0_30px_-10px_rgba(20,184,166,0.15)] overflow-hidden relative h-[500px] ${isDark ? 'bg-[#0b111b]' : 'bg-white'}`}>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-50"></div>
+              <div className={`p-5 border-b ${isDark ? 'border-white/5' : 'border-gray-200'}`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <span>🧠</span>
+                      Signal Intelligence
+                    </h3>
+                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>AI Confidence Score</p>
+                  </div>
+                  {asset.signal ? (
+                    <div className="bg-[#0bda6c]/10 border border-[#0bda6c]/20 text-[#0bda6c] px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-sm animate-pulse">
+                      <span>↑</span>
+                      {asset.signal}
+                    </div>
+                  ) : (
+                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${isDark ? 'bg-gray-500/10 text-gray-400' : 'bg-gray-200 text-gray-600'}`}>
+                      No Signal
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <div className="flex justify-between text-xs font-medium mb-1.5">
+                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Confidence</span>
+                    <span className={isDark ? 'text-white' : 'text-slate-900'}>{asset.strength || 0} / 5.0</span>
+                  </div>
+                  <div className={`h-2 w-full rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                    <div 
+                      className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"
+                      style={{ width: `${((asset.strength || 0) / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <div className={`p-5 grid grid-cols-2 gap-4 overflow-y-auto ${isDark ? 'bg-[#0a0f16]/60' : 'bg-slate-50'}`} style={{maxHeight: 'calc(500px - 140px)'}}>
+                <div className="col-span-2">
+                  <p className={`text-xs uppercase font-bold tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Entry Zone</p>
+                  <p className={`text-2xl font-bold font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {asset.entry ? `$${asset.entry.toLocaleString()}` : '-'} <span className={`text-sm font-sans font-normal ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{asset.entry ? 'market' : 'N/A'}</span>
+                  </p>
+                </div>
+                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="size-1.5 rounded-full bg-[#ff4d4d]"></span>
+                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Stop Loss</p>
+                  </div>
+                  <p className="text-lg font-bold text-[#ff4d4d] font-mono">{asset.stopLoss ? `$${asset.stopLoss.toLocaleString()}` : '-'}</p>
+                  <p className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{asset.stopLoss ? '-3.35% Risk' : 'N/A'}</p>
+                </div>
+                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="size-1.5 rounded-full bg-teal-500"></span>
+                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Pos. Size</p>
+                  </div>
+                  <p className={`text-lg font-bold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>3.0%</p>
+                  <p className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Risk Management</p>
+                </div>
+                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="size-1.5 rounded-full bg-[#0bda6c]"></span>
+                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>TP 1</p>
+                  </div>
+                  <p className="text-lg font-bold text-[#0bda6c] font-mono">{asset.takeProfit1 ? `$${asset.takeProfit1.toLocaleString()}` : '-'}</p>
+                </div>
+                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="size-1.5 rounded-full bg-[#0bda6c]"></span>
+                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>TP 2</p>
+                  </div>
+                  <p className="text-lg font-bold text-[#0bda6c] font-mono">{asset.takeProfit2 ? `$${asset.takeProfit2.toLocaleString()}` : '-'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky Tabs for Analysis/Chat */}
+        <div className={`sticky top-0 z-10 rounded-xl border ${isDark ? 'bg-[#0b111b] border-white/5' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center gap-4 p-4">
+            <button
+              onClick={() => setActiveTab('analysis')}
+              className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                activeTab === 'analysis'
+                  ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
+                  : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              📊 Analysis
+            </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                activeTab === 'chat'
+                  ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
+                  : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              💬 AI Chat
+            </button>
+          </div>
+        </div>
 
         {/* Comprehensive Analysis - Full Width */}
-        <div className={`rounded-xl overflow-hidden shadow-sm relative ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
-          <div className={`p-5 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
+        {activeTab === 'analysis' && (
+          <div className={`rounded-xl overflow-hidden shadow-sm relative ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+          <div className={`p-4 md:p-6 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg p-2 shadow-lg shadow-purple-500/20">
-                  <span className="text-white text-lg">📊</span>
-                </div>
                 <div>
                   <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Comprehensive Analysis</h3>
                   <p className={`text-xs uppercase tracking-wider font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Multi-Timeframe Market Intelligence</p>
@@ -637,10 +775,11 @@ export default function AssetPage() {
               </div>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-gray-400 hover:text-white' : 'hover:bg-slate-200 text-gray-600 hover:text-slate-900'}`}
+                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}
                 title="Analysis Settings"
               >
-                <span className="text-xl">⚙️</span>
+                <span className="md:hidden text-xl">⚙️</span>
+                <span className="hidden md:inline">{showSettings ? 'Hide Settings' : 'Show Settings'}</span>
               </button>
             </div>
             
@@ -730,7 +869,7 @@ export default function AssetPage() {
             )}
           </div>
           
-          <div className={`p-6 ${isDark ? 'bg-[#0a0f16]/50' : 'bg-slate-50/50'}`}>
+          <div className={`pt-6 ${isDark ? 'bg-[#0a0f16]/50' : 'bg-slate-50/50'}`}>
             {isLoadingAnalysis ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
@@ -741,10 +880,9 @@ export default function AssetPage() {
             ) : analysisData?.analysis ? (
               <div className="space-y-4">
                 {/* Trading Signal Overview */}
-                <div className={`rounded-lg border p-6 ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
+                <div className={`border p-6 ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                      <span className="text-4xl">🎯</span>
                       <div>
                         <h4 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Trading Signal</h4>
                         <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
@@ -764,14 +902,14 @@ export default function AssetPage() {
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <div>
-                      <p className={`text-xs mb-2 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Signal Strength</p>
+                    <div className="col-span-2 md:col-span-1 p-4 rounded-lg space-y-3">
+                      <p className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Signal Strength</p>
                       <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {analysisData.analysis.signalStrength?.toFixed(2)} / 5.0
                       </p>
-                      <div className={`h-2 w-full rounded-full mt-2 ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                      <div className={`h-2 w-full rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
                         <div 
-                          className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"
+                          className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full transition-all duration-300"
                           style={{ width: `${(analysisData.analysis.signalStrength / 5) * 100}%` }}
                         ></div>
                       </div>
@@ -783,9 +921,9 @@ export default function AssetPage() {
                       { label: 'Sentiment', value: analysisData.analysis.tradingSignal?.sentimentScore, color: 'text-pink-400' },
                       { label: 'Gann', value: analysisData.analysis.tradingSignal?.gannScore, color: 'text-orange-400' },
                     ].map((item) => (
-                      <div key={item.label}>
-                        <p className={`text-xs mb-2 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{item.label}</p>
-                        <p className={`text-xl font-bold ${item.color}`}>{item.value?.toFixed(2) || '0.00'}</p>
+                      <div key={item.label} className="p-4 rounded-lg space-y-3">
+                        <p className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{item.label}</p>
+                        <p className={`text-2xl font-bold ${item.color}`}>{item.value?.toFixed(2) || '0.00'}</p>
                       </div>
                     ))}
                   </div>
@@ -795,7 +933,6 @@ export default function AssetPage() {
                 <div className={`rounded-lg border overflow-hidden ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
                   <div className={`p-5 border-b ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl">📊</span>
                       <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Multi-Timeframe Analysis</h4>
                     </div>
                   </div>
@@ -842,7 +979,6 @@ export default function AssetPage() {
                 {/* Cycle Analysis Detailed */}
                 <div className={`rounded-lg border p-6 ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
                   <div className="flex items-center gap-2 mb-5">
-                    <span className="text-2xl">🔄</span>
                     <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Detailed Cycle Analysis</h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -877,20 +1013,18 @@ export default function AssetPage() {
                   </div>
                 </div>
 
-                {/* Full Report */}
-                <div className={`rounded-lg border p-6 ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">📄</span>
-                      <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Comprehensive Report</h4>
-                    </div>
+                {/* Comprehensive Report - Free Flowing */}
+                <div className="mt-8 px-6">
+                  <div className={`mb-6 pb-4 border-b ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+                    <h4 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Comprehensive Report</h4>
+                    <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>AI-Generated Market Intelligence</p>
                   </div>
                   {analysisData.report ? (
-                    <div className={`space-y-4 ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'} rounded-lg p-4`}>
+                    <div className="space-y-4">
                       {renderReport(analysisData.report)}
                     </div>
                   ) : (
-                    <div className={`text-center py-6 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                    <div className={`text-center py-12 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                       <p className="text-sm">No detailed report available</p>
                     </div>
                   )}
@@ -922,11 +1056,11 @@ export default function AssetPage() {
             )}
           </div>
         </div>
+        )}
 
-        {/* Bottom Grid - AI Chat & Signal Intelligence */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* AI Chat - 8 columns */}
-          <div className="lg:col-span-8">
+        {/* AI Chat */}
+        {activeTab === 'chat' && (
+          <div>
             <div className={`rounded-xl overflow-hidden flex flex-col shadow-sm h-[500px] ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
               <div className={`p-4 border-b ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
                 <div className="flex items-center gap-3">
@@ -1020,86 +1154,7 @@ export default function AssetPage() {
                   </div>
             </div>
           </div>
-
-          {/* Signal Intelligence - 4 columns */}
-          <div className="lg:col-span-4">
-            {/* Signal Intelligence */}
-            <div className={`rounded-xl border border-teal-500/30 shadow-[0_0_30px_-10px_rgba(20,184,166,0.15)] overflow-hidden relative ${isDark ? 'bg-[#0b111b]' : 'bg-white'}`}>
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-50"></div>
-              <div className={`p-5 border-b ${isDark ? 'border-white/5' : 'border-gray-200'}`}>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      <span>🧠</span>
-                      Signal Intelligence
-                    </h3>
-                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>AI Confidence Score</p>
-                  </div>
-                  {asset.signal ? (
-                    <div className="bg-[#0bda6c]/10 border border-[#0bda6c]/20 text-[#0bda6c] px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-sm animate-pulse">
-                      <span>↑</span>
-                      {asset.signal}
-                    </div>
-                  ) : (
-                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${isDark ? 'bg-gray-500/10 text-gray-400' : 'bg-gray-200 text-gray-600'}`}>
-                      No Signal
-                    </div>
-                  )}
-                </div>
-                <div className="mb-2">
-                  <div className="flex justify-between text-xs font-medium mb-1.5">
-                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Confidence</span>
-                    <span className={isDark ? 'text-white' : 'text-slate-900'}>{asset.strength || 0} / 5.0</span>
-                  </div>
-                  <div className={`h-2 w-full rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
-                    <div 
-                      className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"
-                      style={{ width: `${((asset.strength || 0) / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              <div className={`p-5 grid grid-cols-2 gap-4 ${isDark ? 'bg-[#0a0f16]/60' : 'bg-slate-50'}`}>
-                <div className="col-span-2">
-                  <p className={`text-xs uppercase font-bold tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Entry Zone</p>
-                  <p className={`text-2xl font-bold font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {asset.entry ? `$${asset.entry.toLocaleString()}` : '-'} <span className={`text-sm font-sans font-normal ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{asset.entry ? 'market' : 'N/A'}</span>
-                  </p>
-                </div>
-                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="size-1.5 rounded-full bg-[#ff4d4d]"></span>
-                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Stop Loss</p>
-                  </div>
-                  <p className="text-lg font-bold text-[#ff4d4d] font-mono">{asset.stopLoss ? `$${asset.stopLoss.toLocaleString()}` : '-'}</p>
-                  <p className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{asset.stopLoss ? '-3.35% Risk' : 'N/A'}</p>
-                </div>
-                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="size-1.5 rounded-full bg-teal-500"></span>
-                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Pos. Size</p>
-                  </div>
-                  <p className={`text-lg font-bold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>3.0%</p>
-                  <p className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Risk Management</p>
-                </div>
-                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="size-1.5 rounded-full bg-[#0bda6c]"></span>
-                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>TP 1</p>
-                  </div>
-                  <p className="text-lg font-bold text-[#0bda6c] font-mono">{asset.takeProfit1 ? `$${asset.takeProfit1.toLocaleString()}` : '-'}</p>
-                </div>
-                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="size-1.5 rounded-full bg-[#0bda6c]"></span>
-                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>TP 2</p>
-                  </div>
-                  <p className="text-lg font-bold text-[#0bda6c] font-mono">{asset.takeProfit2 ? `$${asset.takeProfit2.toLocaleString()}` : '-'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </main>
 
       {/* Fullscreen Chart Modal */}

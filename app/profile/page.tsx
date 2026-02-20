@@ -114,14 +114,14 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsDark(!isDark)}
-                className={`px-3 py-2 rounded-lg border transition-colors ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'bg-gray-200 text-slate-900 hover:bg-gray-300'}`}
+                className={`px-3 py-2 rounded-lg transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-slate-900 hover:text-gray-600'}`}
               >
                 {isDark ? '☀️' : '🌙'}
               </button>
               <div className="relative">
                 <button
                   onClick={() => setNotificationOpen(!notificationOpen)}
-                  className={`h-9 w-9 rounded-lg border relative ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-300 bg-gray-100 text-gray-600 hover:text-slate-900'}`}
+                  className={`h-9 w-9 rounded-lg relative ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}
                 >
                   🔔
                   <span className="absolute top-1 right-1 h-2 w-2 bg-teal-500 rounded-full"></span>
