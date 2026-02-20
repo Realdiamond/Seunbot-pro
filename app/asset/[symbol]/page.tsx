@@ -68,7 +68,7 @@ export default function AssetPage() {
       if (line.includes('┌')) {
         const tableTitle = line.replace(/[┌─┐]/g, '').trim();
         const sections: any[] = [];
-        let currentSection: { title: string; items: string[] } = { title: '', items: [] };
+        let currentSection: { title: string; items: any[] } = { title: '', items: [] };
         
         i++; // Skip the top border
         

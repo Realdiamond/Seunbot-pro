@@ -219,10 +219,12 @@ export default function ChatPage() {
                     <p className={`text-xs mt-2 ${
                       message.role === 'user' ? 'text-teal-100' : 'text-gray-500'
                     }`}>
-                      {new Date(message.timestamp).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {message.timestamp
+                        ? new Date(message.timestamp).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : ''}
                     </p>
                   </div>
                 </div>
