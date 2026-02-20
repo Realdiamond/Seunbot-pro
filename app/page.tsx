@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Asset, Market } from '@/types';
 import Link from 'next/link';
+import Sidebar from '@/components/Sidebar';
 
 const markets: (Market | 'All')[] = ['All', 'NGX', 'US Stocks', 'Forex', 'Crypto'];
 
@@ -63,13 +64,33 @@ type SignalFilter = 'BUY' | 'SELL';
 export default function Home() {
   const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [signalFilter, setSignalFilter] = useState<SignalFilter>('BUY');
   const [isDark, setIsDark] = useState(true);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 30;
+
+  // Set sidebar initial state based on screen size
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) { // lg breakpoint
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    // Listen for resize
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch assets from API
   useEffect(() => {
@@ -126,110 +147,50 @@ export default function Home() {
     return filtered;
   }, [selectedMarket, searchQuery, signalFilter, assets]);
 
-  const navItems = [
-    { name: 'Dashboard', path: '/', icon: '📊' },
-    { name: 'AI Chat', path: '/chat', icon: '🤖' },
-    { name: 'Profile', path: '/profile', icon: '👤' },
-  ];
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedMarket, searchQuery, signalFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAssets.length / ITEMS_PER_PAGE);
+  const paginatedAssets = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredAssets.slice(startIndex, endIndex);
+  }, [filteredAssets, currentPage, ITEMS_PER_PAGE]);
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0b0f16] text-white' : 'bg-[#f6f6f8] text-slate-900'}`}>
       <div className="flex h-screen overflow-hidden">
-        {/* Mobile overlay */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-        
-        <aside
-          className={`border-r transition-all duration-300 fixed lg:static inset-y-0 left-0 z-50 ${
-            sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 w-0 lg:w-20'
-          } ${isDark ? 'border-white/5 bg-[#0a0f16]' : 'border-gray-200 bg-white'}`}
-        >
-          <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between px-4 py-5">
-              <div className={`flex items-center gap-3 ${sidebarOpen ? 'opacity-100' : 'opacity-0'} transition-opacity`}>
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500" />
-                <div>
-                  <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>SeunBot Pro</p>
-                  <p className="text-xs text-gray-500">Quant Terminal</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSidebarOpen((prev) => !prev)}
-                className={`h-9 w-9 rounded-lg border transition-colors flex items-center justify-center ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-300 bg-gray-100 text-gray-600 hover:text-slate-900'}`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {sidebarOpen ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                  )}
-                </svg>
-              </button>
-            </div>
+        <Sidebar 
+          sidebarOpen={sidebarOpen} 
+          setSidebarOpen={setSidebarOpen} 
+          isDark={isDark} 
+        />
 
-            <div className="px-3 py-2">
-              <p className={`text-[11px] uppercase tracking-widest text-gray-500 ${sidebarOpen ? 'block' : 'hidden'}`}>
-                Menu
-              </p>
-            </div>
-
-            <nav className="flex-1 px-3 space-y-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                    item.path === '/' 
-                      ? isDark ? 'bg-[#131a24] text-white' : 'bg-slate-200 text-slate-900' 
-                      : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <span className="text-base">{item.icon}</span>
-                  <span className={`${sidebarOpen ? 'block' : 'hidden'}`}>{item.name}</span>
-                </Link>
-              ))}
-            </nav>
-
-            <div className={`px-4 py-4 border-t ${isDark ? 'border-white/5' : 'border-gray-200'}`}>
-              <div className="flex items-center gap-3">
-                <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>AT</div>
-                <div className={`${sidebarOpen ? 'block' : 'hidden'}`}>
-                  <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Alex Trader</p>
-                  <p className="text-xs text-gray-500">Pro Plan</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <main className="flex-1 flex flex-col overflow-hidden w-full">
-          <header className={`flex items-center justify-between border-b px-4 lg:px-6 py-4 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className={`lg:hidden h-9 w-9 rounded-lg border mr-3 flex items-center justify-center ${isDark ? 'border-white/10 bg-white/5 text-gray-300' : 'border-gray-300 bg-gray-100 text-gray-600'}`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <header className={`flex items-center justify-between border-b px-6 py-4 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className={`lg:hidden h-9 w-9 rounded-lg transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}
+              >
+                ☰
+              </button>
               <h1 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Market Signals</h1>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsDark(!isDark)}
-                className={`px-3 py-2 rounded-lg border transition-colors ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'bg-gray-200 text-slate-900 hover:bg-gray-300'}`}
+                className={`h-9 w-9 rounded-lg transition-colors ${isDark ? 'text-gray-300 hover:text-white lg:border lg:border-white/10 lg:bg-white/5' : 'text-gray-600 hover:text-slate-900 lg:border lg:border-gray-300 lg:bg-gray-100'}`}
               >
                 {isDark ? '☀️' : '🌙'}
               </button>
               <div className="relative">
                 <button
                   onClick={() => setNotificationOpen(!notificationOpen)}
-                  className={`h-9 w-9 rounded-lg border relative ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-300 bg-gray-100 text-gray-600 hover:text-slate-900'}`}
+                  className={`h-9 w-9 rounded-lg relative transition-colors ${isDark ? 'text-gray-300 hover:text-white lg:border lg:border-white/10 lg:bg-white/5' : 'text-gray-600 hover:text-slate-900 lg:border lg:border-gray-300 lg:bg-gray-100'}`}
                 >
                   🔔
                   <span className="absolute top-1 right-1 h-2 w-2 bg-teal-500 rounded-full"></span>
@@ -256,21 +217,21 @@ export default function Home() {
                   </div>
                 )}
               </div>
-              <Link href="/profile" className={`h-9 w-9 rounded-lg border flex items-center justify-center ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-300 bg-gray-100 text-gray-600 hover:text-slate-900'}`}>👤</Link>
+              <Link href="/profile" className={`hidden lg:flex h-9 w-9 rounded-lg border items-center justify-center ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-300 bg-gray-100 text-gray-600 hover:text-slate-900'}`}>👤</Link>
             </div>
           </header>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="px-4 lg:px-6 py-5">
+            <div className="px-6 py-5">
               <div className={`text-xs mb-4 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Home / Dashboard</div>
 
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex-1 min-w-[200px]">
+                  <div className="flex-1 min-w-[240px]">
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Search symbols..."
+                        placeholder="Search symbols (e.g., TSLA, BTC)..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className={`w-full rounded-lg border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${isDark ? 'border-white/10 bg-[#0f1520] text-white placeholder-gray-500' : 'border-gray-300 bg-white text-slate-900 placeholder-gray-400'}`}
@@ -285,29 +246,27 @@ export default function Home() {
                   </button>
                 </div>
 
-                <div className="flex flex-col lg:flex-row lg:flex-wrap items-start lg:items-center gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {markets.map((market) => (
-                      <button
-                        key={market}
-                        onClick={() => setSelectedMarket(market)}
-                        className={`rounded-lg px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium transition-all ${
-                          selectedMarket === market
-                            ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30'
-                            : isDark ? 'border border-white/10 text-gray-400 hover:text-white hover:bg-white/5' : 'border border-gray-300 text-gray-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                      >
-                        {market}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap items-center gap-2 lg:gap-3">
+                  {markets.map((market) => (
+                    <button
+                      key={market}
+                      onClick={() => setSelectedMarket(market)}
+                      className={`rounded-lg px-2 py-1.5 lg:px-4 lg:py-2 text-xs lg:text-sm font-medium transition-all ${
+                        selectedMarket === market
+                          ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30'
+                          : isDark ? 'border border-white/10 text-gray-400 hover:text-white hover:bg-white/5' : 'border border-gray-300 text-gray-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      {market}
+                    </button>
+                  ))}
                   
-                  <div className="flex items-center gap-3 w-full lg:w-auto lg:ml-auto">
-                    <span className={`text-xs lg:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Signal:</span>
-                    <div className={`flex rounded-lg border p-1 ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-300 bg-white'}`}>
+                  <div className="ml-auto flex items-center gap-2">
+                    <span className={`hidden lg:inline text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Filter by Signal:</span>
+                    <div className={`flex rounded-lg border p-0.5 lg:p-1 ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-300 bg-white'}`}>
                       <button
                         onClick={() => setSignalFilter('BUY')}
-                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                        className={`px-2 py-1 lg:px-4 lg:py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all ${
                           signalFilter === 'BUY'
                             ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
                             : isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'
@@ -317,7 +276,7 @@ export default function Home() {
                       </button>
                       <button
                         onClick={() => setSignalFilter('SELL')}
-                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                        className={`px-2 py-1 lg:px-4 lg:py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all ${
                           signalFilter === 'SELL'
                             ? 'bg-red-500/20 text-red-300 border border-red-500/30'
                             : isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'
@@ -335,21 +294,27 @@ export default function Home() {
                   <table className="min-w-full text-sm">
                     <thead className={`text-xs uppercase tracking-widest ${isDark ? 'bg-[#0f1520] text-gray-500' : 'bg-slate-100 text-gray-600'}`}>
                       <tr>
-                        <th className="px-5 py-3 text-left">Asset</th>
-                        <th className="px-5 py-3 text-left">Market</th>
-                        <th className="px-5 py-3 text-left">Signal</th>
-                        <th className="px-5 py-3 text-left">Strength</th>
-                        <th className="px-5 py-3 text-left">Entry</th>
-                        <th className="px-5 py-3 text-left">SL</th>
-                        <th className="px-5 py-3 text-left">TP1</th>
-                        <th className="px-5 py-3 text-left">TP2</th>
-                        <th className="px-5 py-3 text-left">Time</th>
+                        <th className="px-3 lg:px-5 py-3 text-left">Asset</th>
+                        <th className="px-3 lg:px-5 py-3 text-left">Market</th>
+                        <th className="hidden lg:table-cell px-5 py-3 text-left">Signal</th>
+                        <th className="hidden lg:table-cell px-5 py-3 text-left">Strength</th>
+                        <th className="hidden lg:table-cell px-5 py-3 text-left">Entry</th>
+                        <th className="hidden lg:table-cell px-5 py-3 text-left">SL</th>
+                        <th className="hidden lg:table-cell px-5 py-3 text-left">TP1</th>
+                        <th className="hidden lg:table-cell px-5 py-3 text-left">TP2</th>
+                        <th className="hidden lg:table-cell px-5 py-3 text-left">Time</th>
                       </tr>
                     </thead>
                     <tbody className={`${isDark ? 'divide-y divide-white/5' : 'divide-y divide-gray-200'}`}>
                       {loading ? (
                         <tr>
-                          <td colSpan={9} className="px-5 py-16 text-center">
+                          <td colSpan={2} className="lg:hidden px-5 py-16 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <div className="h-5 w-5 rounded-full border-2 border-teal-500 border-t-transparent animate-spin"></div>
+                              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Loading...</span>
+                            </div>
+                          </td>
+                          <td colSpan={9} className="hidden lg:table-cell px-5 py-16 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <div className="h-5 w-5 rounded-full border-2 border-teal-500 border-t-transparent animate-spin"></div>
                               <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Loading assets...</span>
@@ -358,7 +323,16 @@ export default function Home() {
                         </tr>
                       ) : error ? (
                         <tr>
-                          <td colSpan={9} className="px-5 py-16 text-center">
+                          <td colSpan={2} className="lg:hidden px-5 py-16 text-center">
+                            <div className="text-red-400 text-sm mb-2">{error}</div>
+                            <button
+                              onClick={() => window.location.reload()}
+                              className="px-3 py-1.5 rounded-lg bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 text-sm"
+                            >
+                              Retry
+                            </button>
+                          </td>
+                          <td colSpan={9} className="hidden lg:table-cell px-5 py-16 text-center">
                             <div className="text-red-400">{error}</div>
                             <button
                               onClick={() => window.location.reload()}
@@ -369,7 +343,7 @@ export default function Home() {
                           </td>
                         </tr>
                       ) : (
-                        filteredAssets.map((asset) => {
+                        paginatedAssets.map((asset) => {
                           const levels = calculateLevels(asset.entry, asset.stopLoss, asset.takeProfit1, asset.takeProfit2, asset.signal);
                           const strengthBars = Math.round(asset.strength || 0);
 
@@ -379,23 +353,23 @@ export default function Home() {
                               onClick={() => window.location.href = `/asset/${asset.symbol}`}
                               className={`cursor-pointer ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}
                             >
-                              <td className="px-5 py-4">
-                                <div className="flex items-center gap-3">
-                                  <div className={`h-8 w-8 rounded-md flex items-center justify-center text-xs font-semibold ${isDark ? 'bg-white/10' : 'bg-slate-100'}`}>
+                              <td className="px-3 lg:px-5 py-3 lg:py-4">
+                                <div className="flex items-center gap-2 lg:gap-3">
+                                  <div className={`h-6 w-6 lg:h-8 lg:w-8 rounded-md flex items-center justify-center text-xs font-semibold ${isDark ? 'bg-white/10' : 'bg-slate-100'}`}>
                                     {asset.symbol.slice(0, 1)}
                                   </div>
                                   <div>
-                                    <div className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{asset.symbol}</div>
+                                    <div className={`font-semibold text-sm lg:text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>{asset.symbol}</div>
                                     <div className="text-xs text-gray-500">{asset.name}</div>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-5 py-4">
+                              <td className="px-3 lg:px-5 py-3 lg:py-4">
                                 <span className={`rounded-md border px-2 py-1 text-xs ${isDark ? 'border-white/10 bg-white/5 text-gray-300' : 'border-gray-300 bg-slate-100 text-gray-700'}`}>
                                   {asset.market || asset.exchange || '-'}
                                 </span>
                               </td>
-                              <td className="px-5 py-4">
+                              <td className="hidden lg:table-cell px-5 py-4">
                                 {asset.signal ? (
                                   <span
                                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -412,7 +386,7 @@ export default function Home() {
                                   <span className="text-xs text-gray-500">-</span>
                                 )}
                               </td>
-                              <td className="px-5 py-4">
+                              <td className="hidden lg:table-cell px-5 py-4">
                                 {asset.strength ? (
                                   <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-1">
@@ -445,19 +419,19 @@ export default function Home() {
                                   <span className="text-xs text-gray-500">-</span>
                                 )}
                               </td>
-                              <td className={`px-5 py-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                              <td className={`hidden lg:table-cell px-5 py-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 {asset.entry ? asset.entry.toLocaleString() : '-'}
                               </td>
-                              <td className="px-5 py-4 text-red-400">
+                              <td className="hidden lg:table-cell px-5 py-4 text-red-400">
                                 {asset.signal === 'HOLD' || !levels.sl ? '-' : levels.sl.toLocaleString()}
                               </td>
-                              <td className="px-5 py-4 text-teal-400">
+                              <td className="hidden lg:table-cell px-5 py-4 text-teal-400">
                                 {asset.signal === 'HOLD' || !levels.tp1 ? '-' : levels.tp1.toLocaleString()}
                               </td>
-                              <td className="px-5 py-4 text-teal-300">
+                              <td className="hidden lg:table-cell px-5 py-4 text-teal-300">
                                 {asset.signal === 'HOLD' || !levels.tp2 ? '-' : levels.tp2.toLocaleString()}
                               </td>
-                              <td className="px-5 py-4 text-xs text-gray-500">
+                              <td className="hidden lg:table-cell px-5 py-4 text-xs text-gray-500">
                                 {asset.updatedAt ? formatRelativeTime(asset.updatedAt) : '-'}
                               </td>
                             </tr>
@@ -470,6 +444,44 @@ export default function Home() {
 
                 {!loading && !error && filteredAssets.length === 0 && (
                   <div className={`py-16 text-center ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>No assets found.</div>
+                )}
+
+                {/* Pagination Controls */}
+                {!loading && !error && filteredAssets.length > 0 && (
+                  <div className={`mt-4 px-4 py-4 border-t flex flex-col sm:flex-row items-center justify-between gap-3 ${isDark ? 'border-white/5' : 'border-gray-200'}`}>
+                    <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Showing <span className="font-semibold">{((currentPage - 1) * ITEMS_PER_PAGE) + 1}</span> to{' '}
+                      <span className="font-semibold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredAssets.length)}</span> of{' '}
+                      <span className="font-semibold">{filteredAssets.length}</span> assets
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          currentPage === 1
+                            ? isDark ? 'bg-white/5 text-gray-600 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : isDark ? 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border border-white/10' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                        }`}
+                      >
+                        ← Previous
+                      </button>
+                      <div className={`px-3 py-1.5 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Page {currentPage} of {totalPages}
+                      </div>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          currentPage === totalPages
+                            ? isDark ? 'bg-white/5 text-gray-600 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : isDark ? 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border border-white/10' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                        }`}
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

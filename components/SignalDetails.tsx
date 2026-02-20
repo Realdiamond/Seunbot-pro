@@ -17,29 +17,29 @@ export default function SignalDetails({ asset }: { asset: Asset }) {
         <div className="space-y-3">
           <div className="flex justify-between items-center p-3 bg-gray-900 rounded">
             <span className="text-gray-400">Signal:</span>
-            <span className={`text-xl font-bold ${asset.signal ? signalColors[asset.signal] : 'text-gray-400'}`}>
-              {asset.signal || 'N/A'}
+            <span className={`text-xl font-bold ${signalColors[asset.signal]}`}>
+              {asset.signal}
             </span>
           </div>
 
           <div className="flex justify-between items-center p-3 bg-gray-900 rounded">
             <span className="text-gray-400">Strength:</span>
             <span className="text-xl font-bold text-white">
-              {asset.strength?.toFixed(1) || '0.0'} / 5.0
+              {asset.strength.toFixed(1)} / 5.0
             </span>
           </div>
 
           <div className="flex justify-between items-center p-3 bg-gray-900 rounded">
             <span className="text-gray-400">Entry Price:</span>
             <span className="text-xl font-bold text-white">
-              {asset.entry?.toLocaleString() || 'N/A'}
+              {asset.entry.toLocaleString()}
             </span>
           </div>
 
           <div className="flex justify-between items-center p-3 bg-gray-900 rounded">
             <span className="text-gray-400">Position Size:</span>
             <span className="text-xl font-bold text-teal-400">
-              {asset.positionSize || 'N/A'}
+              {asset.positionSize}
             </span>
           </div>
         </div>
@@ -48,21 +48,21 @@ export default function SignalDetails({ asset }: { asset: Asset }) {
           <div className="flex justify-between items-center p-3 bg-red-900/20 rounded border border-red-800">
             <span className="text-gray-400">Stop Loss:</span>
             <span className="text-xl font-bold text-red-400">
-              {asset.stopLoss ?? 'N/A'}%
+              {asset.stopLoss}%
             </span>
           </div>
 
           <div className="flex justify-between items-center p-3 bg-teal-900/20 rounded border border-teal-800">
             <span className="text-gray-400">Take Profit 1:</span>
             <span className="text-xl font-bold text-teal-400">
-              {asset.takeProfit1 ?? 'N/A'}%
+              {asset.takeProfit1}%
             </span>
           </div>
 
           <div className="flex justify-between items-center p-3 bg-teal-900/20 rounded border border-teal-800">
             <span className="text-gray-400">Take Profit 2:</span>
             <span className="text-xl font-bold text-teal-400">
-              {asset.takeProfit2 ?? 'N/A'}%
+              {asset.takeProfit2}%
             </span>
           </div>
         </div>
