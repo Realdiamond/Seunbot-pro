@@ -759,119 +759,170 @@ export default function AssetPage() {
 
           {/* Signal Intelligence - 30-35% (4 columns) */}
           <div className="lg:col-span-4">
-            <div className={`rounded-xl border border-teal-500/30 shadow-[0_0_30px_-10px_rgba(20,184,166,0.15)] overflow-hidden relative h-[500px] ${isDark ? 'bg-[#0b111b]' : 'bg-white'}`}>
+            <div className={`rounded-xl border border-teal-500/30 shadow-[0_0_30px_-10px_rgba(20,184,166,0.15)] overflow-hidden relative ${isDark ? 'bg-[#0b111b]' : 'bg-white'}`}>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-50"></div>
-              <div className={`p-5 border-b ${isDark ? 'border-white/5' : 'border-gray-200'}`}>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      <span>🧠</span>
-                      Signal Intelligence
-                    </h3>
-                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>AI Confidence Score</p>
-                  </div>
-                  {asset.signal ? (
-                    <div className="bg-[#0bda6c]/10 border border-[#0bda6c]/20 text-[#0bda6c] px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-sm animate-pulse">
-                      <span>↑</span>
-                      {asset.signal}
-                    </div>
-                  ) : (
-                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${isDark ? 'bg-gray-500/10 text-gray-400' : 'bg-gray-200 text-gray-600'}`}>
-                      No Signal
-                    </div>
-                  )}
+              
+              {/* Loading State */}
+              {loadingPrediction && (
+                <div className="p-8 flex flex-col items-center justify-center h-[500px]">
+                  <div className="h-12 w-12 rounded-full border-4 border-teal-500 border-t-transparent animate-spin mb-4"></div>
+                  <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Loading AI prediction...</span>
                 </div>
-                <div className="mb-2">
-                  <div className="flex justify-between text-xs font-medium mb-1.5">
-                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Confidence</span>
-                    <span className={isDark ? 'text-white' : 'text-slate-900'}>{asset.strength || 0} / 5.0</span>
-                  </div>
-                  <div className={`h-2 w-full rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
-                    <div 
-                      className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"
-                      style={{ width: `${((asset.strength || 0) / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                {/* AI Prediction Section */}
-                {loadingPrediction && (
-                  <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-[#0a0f16] border-white/5' : 'bg-slate-50 border-gray-200'}`}>
-                    <div className="flex items-center gap-2">
-                      <div className="h-4 w-4 rounded-full border-2 border-teal-500 border-t-transparent animate-spin"></div>
-                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Loading AI prediction...</span>
-                    </div>
-                  </div>
-                )}
-                
-                {predictionData && predictionData.isSuccess && (
-                  <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-slate-50 border-gray-200'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        🔮 AI Prediction
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                        predictionData.recommendation === 'BUY' ? 'bg-[#0bda6c]/10 text-[#0bda6c]' : 
-                        predictionData.recommendation === 'SELL' ? 'bg-red-500/10 text-red-500' : 
-                        'bg-yellow-500/10 text-yellow-500'
+              )}
+
+              {/* Prediction Data Available */}
+              {!loadingPrediction && predictionData && predictionData.isSuccess && (
+                <div className="h-[500px] flex flex-col">
+                  {/* Header with Recommendation */}
+                  <div className={`p-5 border-b ${isDark ? 'border-white/5' : 'border-gray-200'}`}>
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          <span>🧠</span>
+                          Signal Intelligence
+                        </h3>
+                        <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                          {new Date(predictionData.analyzedAt).toLocaleString('en-GB', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit', 
+                            second: '2-digit',
+                            hour12: false 
+                          })}
+                        </p>
+                      </div>
+                      <div className={`px-4 py-2 rounded-full text-lg font-bold flex items-center gap-1.5 shadow-lg ${
+                        predictionData.recommendation === 'BUY' 
+                          ? 'bg-[#0bda6c]/20 border-2 border-[#0bda6c]/40 text-[#0bda6c] animate-pulse' 
+                          : predictionData.recommendation === 'SELL' 
+                          ? 'bg-red-500/20 border-2 border-red-500/40 text-red-500 animate-pulse' 
+                          : 'bg-yellow-500/20 border-2 border-yellow-500/40 text-yellow-500'
                       }`}>
+                        {predictionData.recommendation === 'BUY' && <span className="text-xl">↑</span>}
+                        {predictionData.recommendation === 'SELL' && <span className="text-xl">↓</span>}
                         {predictionData.recommendation}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <div>
-                        <p className={`text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Confidence</p>
-                        <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{(predictionData.confidence * 100).toFixed(0)}%</p>
-                      </div>
-                      <div>
-                        <p className={` text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Target Price</p>
-                        <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>${predictionData.suggestedEntry.toFixed(2)}</p>
                       </div>
                     </div>
-                    <p className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Final Score: {predictionData.finalScore.toFixed(3)} • Risk/Reward: {predictionData.riskRewardRatio.toFixed(2)}x
-                    </p>
+
+                    {/* AI Confidence */}
+                    <div className="mb-3">
+                      <div className="flex justify-between text-xs font-medium mb-1.5">
+                        <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>AI Confidence</span>
+                        <span className={isDark ? 'text-white' : 'text-slate-900'}>{(predictionData.confidence * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                        <div 
+                          className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"
+                          style={{ width: `${predictionData.confidence * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Component Scores */}
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className={`p-2 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                        <p className={`text-[9px] uppercase mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Final</p>
+                        <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {predictionData.finalScore.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className={`p-2 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                        <p className={`text-[9px] uppercase mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Tech</p>
+                        <p className={`text-sm font-bold ${
+                          predictionData.technicalScore > 0 ? 'text-teal-400' : 
+                          predictionData.technicalScore < 0 ? 'text-red-400' : 
+                          'text-gray-400'
+                        }`}>
+                          {predictionData.technicalScore >= 0 ? '+' : ''}{predictionData.technicalScore.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className={`p-2 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                        <p className={`text-[9px] uppercase mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Fund</p>
+                        <p className={`text-sm font-bold ${
+                          predictionData.fundamentalScore > 0 ? 'text-teal-400' : 
+                          predictionData.fundamentalScore < 0 ? 'text-red-400' : 
+                          'text-gray-400'
+                        }`}>
+                          {predictionData.fundamentalScore >= 0 ? '+' : ''}{predictionData.fundamentalScore.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className={`p-2 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                        <p className={`text-[9px] uppercase mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Sent</p>
+                        <p className={`text-sm font-bold ${
+                          predictionData.sentimentScore > 0 ? 'text-teal-400' : 
+                          predictionData.sentimentScore < 0 ? 'text-red-400' : 
+                          'text-gray-400'
+                        }`}>
+                          {predictionData.sentimentScore >= 0 ? '+' : ''}{predictionData.sentimentScore.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-              <div className={`p-5 grid grid-cols-2 gap-4 overflow-y-auto ${isDark ? 'bg-[#0a0f16]/60' : 'bg-slate-50'}`} style={{maxHeight: 'calc(500px - 140px)'}}>
-                <div className="col-span-2">
-                  <p className={`text-xs uppercase font-bold tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Entry Zone</p>
-                  <p className={`text-2xl font-bold font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {asset.entry ? `$${asset.entry.toLocaleString()}` : '-'} <span className={`text-sm font-sans font-normal ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{asset.entry ? 'market' : 'N/A'}</span>
-                  </p>
-                </div>
-                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="size-1.5 rounded-full bg-[#ff4d4d]"></span>
-                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Stop Loss</p>
+
+                  {/* Price Levels - Scrollable */}
+                  <div className="flex-1 overflow-y-auto">
+                    <div className={`p-5 ${isDark ? 'bg-[#0a0f16]/40' : 'bg-slate-50'}`}>
+                      <p className={`text-xs uppercase font-bold tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>💲 Price Levels</p>
+                      
+                      {/* 2x2 Grid for Price Levels */}
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
+                          <p className={`text-[10px] uppercase mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Current Price</p>
+                          <p className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <span className="text-base align-middle">₦</span>{predictionData.currentPrice.toFixed(2)}
+                          </p>
+                        </div>
+                        
+                        <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
+                          <p className={`text-[10px] uppercase mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Entry Price</p>
+                          <p className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <span className="text-base align-middle">₦</span>{predictionData.suggestedEntry.toFixed(2)}
+                          </p>
+                        </div>
+                        
+                        <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-red-500/10' : 'bg-white border-red-200'}`}>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="size-2 rounded-full bg-[#ff4d4d]"></span>
+                            <p className={`text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Stop Loss</p>
+                          </div>
+                          <p className="text-xl font-bold text-[#ff4d4d] font-mono"><span className="text-base align-middle">₦</span>{predictionData.stopLoss.toFixed(2)}</p>
+                        </div>
+                        
+                        <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-teal-500/10' : 'bg-white border-teal-200'}`}>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="size-2 rounded-full bg-[#0bda6c]"></span>
+                            <p className={`text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Take Profit</p>
+                          </div>
+                          <p className="text-xl font-bold text-[#0bda6c] font-mono"><span className="text-base align-middle">₦</span>{predictionData.takeProfit.toFixed(2)}</p>
+                        </div>
+                      </div>
+
+                      {/* Risk/Reward Ratio - Below the grid */}
+                      <div className={`p-3 rounded-lg border ${isDark ? 'bg-gradient-to-r from-teal-500/5 to-cyan-500/5 border-teal-500/20' : 'bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200'}`}>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Risk/Reward Ratio</span>
+                          <span className={`text-xl font-bold ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>
+                            1:{predictionData.riskRewardRatio.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-lg font-bold text-[#ff4d4d] font-mono">{asset.stopLoss ? `$${asset.stopLoss.toLocaleString()}` : '-'}</p>
-                  <p className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{asset.stopLoss ? '-3.35% Risk' : 'N/A'}</p>
                 </div>
-                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="size-1.5 rounded-full bg-teal-500"></span>
-                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Pos. Size</p>
+              )}
+
+              {/* No Prediction Data */}
+              {!loadingPrediction && (!predictionData || !predictionData.isSuccess) && (
+                <div className="p-8 flex flex-col items-center justify-center h-[500px]">
+                  <div className={`text-center ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                    <p className="text-4xl mb-3">🔮</p>
+                    <p className="text-sm font-medium">No AI prediction available</p>
+                    <p className="text-xs mt-2">Prediction data is loading...</p>
                   </div>
-                  <p className={`text-lg font-bold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>3.0%</p>
-                  <p className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Risk Management</p>
                 </div>
-                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="size-1.5 rounded-full bg-[#0bda6c]"></span>
-                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>TP 1</p>
-                  </div>
-                  <p className="text-lg font-bold text-[#0bda6c] font-mono">{asset.takeProfit1 ? `$${asset.takeProfit1.toLocaleString()}` : '-'}</p>
-                </div>
-                <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="size-1.5 rounded-full bg-[#0bda6c]"></span>
-                    <p className={`text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>TP 2</p>
-                  </div>
-                  <p className="text-lg font-bold text-[#0bda6c] font-mono">{asset.takeProfit2 ? `$${asset.takeProfit2.toLocaleString()}` : '-'}</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -1214,181 +1265,278 @@ export default function AssetPage() {
 
         {/* Market Sentiment Tab */}
         {activeTab === 'sentiment' && (
-          <div>
-          {sentimentData && !sentimentData.errorMessage ? (
-            <div className={`rounded-xl overflow-hidden shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
-              <div className={`p-4 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      <span>🎭</span>
-                      Market Sentiment
-                    </h3>
-                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-                      {sentimentData.sourcesAnalyzed} sources • {sentimentData.analyzedAt && new Date(sentimentData.analyzedAt).toLocaleTimeString()}
-                    </p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full font-bold text-xs ${
-                    sentimentData.sentimentLabel === 'BULLISH' || sentimentData.sentimentLabel === 'positive' ? 'bg-[#0bda6c]/10 text-[#0bda6c]' :
-                    sentimentData.sentimentLabel === 'BEARISH' || sentimentData.sentimentLabel === 'negative' ? 'bg-red-500/10 text-red-500' :
-                    'bg-yellow-500/10 text-yellow-500'
-                  }`}>
-                    {sentimentData.sentimentLabel}
+          <div className="space-y-6">
+            {/* Loading State */}
+            {(loadingPrediction || loadingSentiment) && (
+              <div className={`rounded-xl p-12 text-center ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+                <div className="inline-block h-12 w-12 rounded-full border-4 border-teal-500 border-t-transparent animate-spin mb-4"></div>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Loading sentiment analysis...</p>
+              </div>
+            )}
+
+            {/* Sentiment Overview - From Prediction API */}
+            {!loadingPrediction && predictionData && predictionData.isSuccess && predictionData.breakdown && (
+              <div className={`rounded-xl overflow-hidden shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+                <div className={`p-5 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <span>🎭</span>
+                        Market Sentiment Overview
+                      </h3>
+                      <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                        {predictionData.breakdown.tweetsAnalyzed || 0} sources analyzed
+                      </p>
+                    </div>
+                    <div className={`px-4 py-2 rounded-full font-bold text-sm ${
+                      predictionData.sentimentScore > 0.3 ? 'bg-[#0bda6c]/20 text-[#0bda6c] border border-[#0bda6c]/30' :
+                      predictionData.sentimentScore < -0.3 ? 'bg-red-500/20 text-red-500 border border-red-500/30' :
+                      'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30'
+                    }`}>
+                      {predictionData.sentimentScore > 0.3 ? 'BULLISH' : predictionData.sentimentScore < -0.3 ? 'BEARISH' : 'NEUTRAL'}
+                    </div>
                   </div>
                 </div>
+
+                <div className="p-5 space-y-4">
+                  {/* Sentiment Score Bar */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Sentiment Score</span>
+                      <span className={`text-lg font-bold ${
+                        predictionData.sentimentScore > 0 ? 'text-teal-500' : 
+                        predictionData.sentimentScore < 0 ? 'text-red-500' : 
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        {predictionData.sentimentScore >= 0 ? '+' : ''}{(predictionData.sentimentScore * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <div className={`h-3 w-full rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                        <div 
+                          className={`h-full rounded-full transition-all ${
+                            predictionData.sentimentScore >= 0 
+                              ? 'bg-gradient-to-r from-teal-500 to-cyan-500' 
+                              : 'bg-gradient-to-r from-red-500 to-orange-500'
+                          }`}
+                          style={{ width: `${Math.abs(predictionData.sentimentScore) * 100}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex items-center justify-between mt-1 text-xs">
+                        <span className="text-red-400">Bearish</span>
+                        <span className={isDark ? 'text-gray-500' : 'text-gray-600'}>Neutral</span>
+                        <span className="text-teal-400">Bullish</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sentiment Summary */}
+                  {predictionData.breakdown.sentimentSummary && (
+                    <div className={`p-4 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                      <p className={`text-xs uppercase font-bold tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        📝 Summary
+                      </p>
+                      <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>
+                        {predictionData.breakdown.sentimentSummary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Sentiment Themes */}
+                  {predictionData.breakdown.sentimentThemes && predictionData.breakdown.sentimentThemes.length > 0 && (
+                    <div>
+                      <p className={`text-xs uppercase font-bold tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        💡 Key Themes
+                      </p>
+                      <div className="space-y-2">
+                        {predictionData.breakdown.sentimentThemes.map((theme, idx) => (
+                          <div key={idx} className={`flex items-start gap-3 p-3 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                            <span className="text-teal-500 text-sm mt-0.5 shrink-0">→</span>
+                            <span className={`text-sm flex-1 leading-relaxed ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>{theme}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              
-              {/* Sentiment Metrics Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className={isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}>
-                    <tr>
-                      <th className={`text-left p-3 text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Metric</th>
-                      <th className={`text-left p-3 text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Value</th>
-                      <th className={`text-left p-3 text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className={isDark ? 'bg-[#0f1520]/50' : 'bg-white'}>
-                      <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Score</td>
-                      <td className="p-3">
-                        <span className={`text-sm font-bold ${
-                          sentimentData.sentimentScore > 0 ? 'text-teal-500' : 
-                          sentimentData.sentimentScore < 0 ? 'text-red-500' : 
-                          isDark ? 'text-gray-400' : 'text-gray-600'
-                        }`}>
-                          {sentimentData.sentimentScore >= 0 ? '+' : ''}{(sentimentData.sentimentScore * 100).toFixed(0)}%
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className={`h-2 w-24 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
-                          <div 
-                            className={`h-full rounded-full ${sentimentData.sentimentScore >= 0 ? 'bg-gradient-to-r from-teal-500 to-cyan-500' : 'bg-gradient-to-r from-red-500 to-orange-500'}`}
-                            style={{ width: `${Math.abs(sentimentData.sentimentScore) * 100}%` }}
-                          ></div>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className={isDark ? 'bg-[#0a0f16]/30' : 'bg-slate-50/50'}>
-                      <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Confidence</td>
-                      <td className={`p-3 text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {(sentimentData.confidence * 100).toFixed(0)}%
-                      </td>
-                      <td className={`p-3 text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        AI certainty level
-                      </td>
-                    </tr>
-                    {sentimentData.keyDrivers && sentimentData.keyDrivers.length > 0 && (
-                      <tr className={isDark ? 'bg-[#0f1520]/50' : 'bg-white'}>
-                        <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Drivers</td>
-                        <td colSpan={2} className="p-3">
-                          <div className="space-y-1">
-                            {sentimentData.keyDrivers.slice(0, 2).map((driver, idx) => (
-                              <div key={idx} className={`text-xs flex items-start gap-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                                <span className="text-teal-500">•</span>
-                                <span>{driver}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    {sentimentData.opportunities && sentimentData.opportunities.length > 0 && (
-                      <tr className={isDark ? 'bg-[#0a0f16]/30' : 'bg-slate-50/50'}>
-                        <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Opportunities</td>
-                        <td colSpan={2} className="p-3">
-                          <div className="space-y-1">
-                            {sentimentData.opportunities.slice(0, 2).map((opp, idx) => (
-                              <div key={idx} className={`text-xs flex items-start gap-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                                <span className="text-green-500">✓</span>
-                                <span>{opp}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    {sentimentData.risks && sentimentData.risks.length > 0 && (
-                      <tr className={isDark ? 'bg-[#0f1520]/50' : 'bg-white'}>
-                        <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Risks</td>
-                        <td colSpan={2} className="p-3">
-                          <div className="space-y-1">
-                            {sentimentData.risks.slice(0, 2).map((risk, idx) => (
-                              <div key={idx} className={`text-xs flex items-start gap-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                                <span className="text-red-500">⚠</span>
-                                <span>{risk}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              
-              {/* Summary Section */}
-              {sentimentData.summary && (
-                <div className={`p-4 border-t ${isDark ? 'border-white/5 bg-[#0a0f16]' : 'border-gray-200 bg-slate-50'}`}>
-                  <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {sentimentData.summary}
+            )}
+
+            {/* Recent News - From Sentiment API */}
+            {!loadingSentiment && sentimentData && sentimentData.recentNews && sentimentData.recentNews.length > 0 && (
+              <div className={`rounded-xl overflow-hidden shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+                <div className={`p-5 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
+                  <h3 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <span>📰</span>
+                    Recent News & Analysis
+                  </h3>
+                  <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                    {sentimentData.recentNews.length} recent article{sentimentData.recentNews.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-              )}
-              
-              {/* Recent News Section */}
-              {sentimentData.recentNews && sentimentData.recentNews.length > 0 && (
-                <div className={`p-4 border-t ${isDark ? 'border-white/5 bg-[#0a0f16]' : 'border-gray-200 bg-slate-50'}`}>
-                  <h4 className={`text-sm font-bold mb-3 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    <span>📰</span>
-                    Recent News ({sentimentData.recentNews.length})
-                  </h4>
-                  <div className="space-y-3">
-                    {sentimentData.recentNews.map((news, idx) => (
-                      <div key={idx} className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h5 className={`text-xs font-bold flex-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                            {news.title}
-                          </h5>
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${
-                            news.sentimentLabel === 'POSITIVE' ? 'bg-[#0bda6c]/10 text-[#0bda6c]' :
-                            news.sentimentLabel === 'NEGATIVE' ? 'bg-red-500/10 text-red-500' :
-                            'bg-gray-500/10 text-gray-500'
-                          }`}>
-                            {news.sentimentLabel}
-                          </span>
-                        </div>
-                        <p className={`text-xs leading-relaxed mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className="divide-y divide-white/5">
+                  {sentimentData.recentNews.map((news, idx) => (
+                    <div key={idx} className={`p-5 ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'} transition-colors`}>
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <h4 className={`text-sm font-bold flex-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {news.title}
+                        </h4>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold shrink-0 ${
+                          news.sentimentLabel === 'positive' || news.sentimentLabel === 'BULLISH'
+                            ? 'bg-teal-500/20 text-teal-400'
+                            : news.sentimentLabel === 'negative' || news.sentimentLabel === 'BEARISH'
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {news.sentimentLabel}
+                        </span>
+                      </div>
+                      
+                      {news.summary && (
+                        <p className={`text-sm mb-3 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                           {news.summary}
                         </p>
-                        <div className="flex items-center gap-3 text-[10px]">
-                          <span className={isDark ? 'text-gray-500' : 'text-gray-500'}>
-                            📍 {news.source}
+                      )}
+                      
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-3">
+                          <span className={`font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                            {news.source}
                           </span>
                           {news.publishedAt && (
-                            <span className={isDark ? 'text-gray-500' : 'text-gray-500'}>
-                              🕒 {new Date(news.publishedAt).toLocaleDateString()}
+                            <span className={isDark ? 'text-gray-600' : 'text-gray-500'}>
+                              {new Date(news.publishedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                          {news.relevance && (
+                            <span className={`px-2 py-0.5 rounded ${isDark ? 'bg-white/5 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
+                              {(news.relevance * 100).toFixed(0)}% relevant
                             </span>
                           )}
                         </div>
+                        {news.url && (
+                          <a 
+                            href={news.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-teal-500 hover:text-teal-400 font-medium"
+                          >
+                            Read more →
+                          </a>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                      
+                      {news.topics && news.topics.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {news.topics.slice(0, 5).map((topic, topicIdx) => (
+                            <span 
+                              key={topicIdx}
+                              className={`px-2 py-0.5 rounded text-xs ${isDark ? 'bg-white/5 text-gray-400' : 'bg-gray-100 text-gray-600'}`}
+                            >
+                              {topic}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className={`text-center py-12 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-              <p className="text-base font-medium">No sentiment data available</p>
-              <p className="text-sm mt-2">Sentiment is loading automatically...</p>
-              <button
-                onClick={fetchSentiment}
-                className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg font-semibold text-sm transition-colors shadow-md"
-              >
-                Load Sentiment
-              </button>
-            </div>
-          )}
+              </div>
+            )}
+
+            {/* Key Factors & Risks - From Prediction API */}
+            {!loadingPrediction && predictionData && predictionData.isSuccess && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Key Factors */}
+                {predictionData.keyFactors && predictionData.keyFactors.length > 0 && (
+                  <div className={`rounded-xl overflow-hidden shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+                    <div className={`p-4 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
+                      <h4 className={`text-sm font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <span>✨</span>
+                        Key Factors
+                      </h4>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      {predictionData.keyFactors.map((factor, idx) => (
+                        <div key={idx} className={`flex items-start gap-3 text-sm ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>
+                          <span className="text-teal-500 text-sm shrink-0">•</span>
+                          <span className="flex-1 leading-relaxed">{factor}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Risks */}
+                {predictionData.risks && predictionData.risks.length > 0 && (
+                  <div className={`rounded-xl overflow-hidden shadow-sm ${isDark ? 'bg-[#0b111b] border border-red-500/20' : 'bg-white border border-red-200'}`}>
+                    <div className={`p-4 border-b ${isDark ? 'border-red-500/20 bg-red-500/5' : 'border-red-200 bg-red-50'}`}>
+                      <h4 className={`text-sm font-bold flex items-center gap-2 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+                        <span>⚠️</span>
+                        Risks
+                      </h4>
+                    </div>
+                    <div className={`p-4 space-y-2 ${isDark ? 'bg-red-500/5' : 'bg-red-50/50'}`}>
+                      {predictionData.risks.map((risk, idx) => (
+                        <div key={idx} className={`flex items-start gap-3 text-sm ${isDark ? 'text-red-300' : 'text-red-700'}`}>
+                          <span className="text-sm shrink-0">•</span>
+                          <span className="flex-1 leading-relaxed">{risk}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Opportunities - From Sentiment API */}
+            {!loadingSentiment && sentimentData && sentimentData.opportunities && sentimentData.opportunities.length > 0 && (
+              <div className={`rounded-xl overflow-hidden shadow-sm ${isDark ? 'bg-[#0b111b] border border-teal-500/20' : 'bg-white border border-teal-200'}`}>
+                <div className={`p-4 border-b ${isDark ? 'border-teal-500/20 bg-teal-500/5' : 'border-teal-200 bg-teal-50'}`}>
+                  <h4 className={`text-sm font-bold flex items-center gap-2 ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>
+                    <span>🎯</span>
+                    Opportunities
+                  </h4>
+                </div>
+                <div className={`p-4 space-y-2 ${isDark ? 'bg-teal-500/5' : 'bg-teal-50/50'}`}>
+                  {sentimentData.opportunities.map((opportunity, idx) => (
+                    <div key={idx} className={`flex items-start gap-3 text-sm ${isDark ? 'text-teal-300' : 'text-teal-700'}`}>
+                      <span className="text-sm shrink-0">•</span>
+                      <span className="flex-1 leading-relaxed">{opportunity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Additional Sentiment Drivers - From Sentiment API */}
+            {!loadingSentiment && sentimentData && sentimentData.keyDrivers && sentimentData.keyDrivers.length > 0 && (
+              <div className={`rounded-xl overflow-hidden shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+                <div className={`p-4 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
+                  <h4 className={`text-sm font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <span>🚀</span>
+                    Market Drivers
+                  </h4>
+                </div>
+                <div className="p-4 space-y-2">
+                  {sentimentData.keyDrivers.map((driver, idx) => (
+                    <div key={idx} className={`flex items-start gap-3 text-sm ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>
+                      <span className="text-cyan-500 text-sm shrink-0">→</span>
+                      <span className="flex-1 leading-relaxed">{driver}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No Data State */}
+            {!loadingPrediction && !loadingSentiment && (!predictionData || !predictionData.isSuccess) && (!sentimentData || sentimentData.errorMessage) && (
+              <div className={`rounded-xl p-12 text-center ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+                <p className="text-4xl mb-3">📊</p>
+                <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>No sentiment data available</p>
+                <p className={`text-xs mt-2 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Sentiment analysis is loading...</p>
+              </div>
+            )}
           </div>
         )}
 
