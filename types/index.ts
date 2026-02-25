@@ -58,3 +58,134 @@ export interface ChartData {
     volume: number;
   }[];
 }
+
+// Prediction API Types
+export interface PredictionResponse {
+  symbol: string;
+  companyName: string;
+  sentimentScore: number;
+  technicalScore: number;
+  fundamentalScore: number;
+  finalScore: number;
+  recommendation: string;
+  confidence: number;
+  currentPrice: number;
+  suggestedEntry: number;
+  stopLoss: number;
+  takeProfit: number;
+  riskRewardRatio: number;
+  breakdown: {
+    tweetsAnalyzed: number;
+    sentimentSummary: string;
+    sentimentThemes: string[];
+    technicalDirection: string;
+    technicalIndicators: Record<string, any>;
+    peRatio: number;
+    eps: number;
+    dividendYield: number;
+    fundamentalSummary: string;
+  };
+  keyFactors: string[];
+  risks: string[];
+  analyzedAt: string;
+  errorMessage: string | null;
+  isSuccess: boolean;
+}
+
+export interface PredictionHistoryItem {
+  id: number;
+  assetSymbol: string;
+  companyName: string;
+  sentimentScore: number;
+  technicalScore: number;
+  fundamentalScore: number;
+  finalScore: number;
+  recommendation: string;
+  confidence: number;
+  priceAtPrediction: number;
+  suggestedEntry: number;
+  stopLoss: number;
+  takeProfit: number;
+  tweetsAnalyzed: number;
+  keyFactorsJson: string;
+  risksJson: string;
+  sentimentSource: string;
+  isScheduledPoll: boolean;
+  predictedAt: string;
+  createdAt: string;
+}
+
+export interface NewsItem {
+  title: string;
+  summary: string;
+  source: string;
+  url: string;
+  publishedAt: string;
+  sentimentScore: number;
+  sentimentLabel: string;
+  relevance: number;
+  topics: string[];
+}
+
+export interface SentimentResponse {
+  symbol: string;
+  companyName: string;
+  sentimentScore: number;
+  sentimentLabel: string;
+  confidence: number;
+  recentNews: NewsItem[];
+  keyDrivers: string[];
+  risks: string[];
+  opportunities: string[];
+  summary: string;
+  analyzedAt: string;
+  sourcesAnalyzed: number;
+  errorMessage: string | null;
+}
+
+export interface WatchlistAnalysisResponse {
+  analyzedAt: string;
+  durationSeconds: number;
+  totalStocks: number;
+  buySignals: PredictionResponse[];
+  sellSignals: PredictionResponse[];
+  holdSignals: PredictionResponse[];
+  errors: Array<{
+    symbol: string;
+    errorMessage: string;
+  }>;
+}
+
+export interface DataVerification {
+  symbol: string;
+  recordCount: number;
+  firstRecordDate: string;
+  lastRecordDate: string;
+  dateRangeDays: number;
+  daysSinceLastUpdate: number;
+  hasSufficientData: boolean;
+  dataQuality: string;
+  message: string;
+  recommendedAction: string;
+  latestClose: number;
+  latestHigh: number;
+  latestLow: number;
+  latestVolume: number;
+}
+
+export interface DataSummarySymbol {
+  symbol: string;
+  name: string;
+  recordCount: number;
+  firstDate: string;
+  lastDate: string;
+  isReadyForPrediction: boolean;
+}
+
+export interface DataSummaryResponse {
+  totalSymbols: number;
+  totalRecords: number;
+  symbolsReadyForPrediction: number;
+  symbols: DataSummarySymbol[];
+  generatedAt: string;
+}

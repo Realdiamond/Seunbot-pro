@@ -14,6 +14,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, isDark }: Sidebar
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: '📊' },
+    { name: 'Watchlist', path: '/watchlist', icon: '⭐' },
     { name: 'AI Chat', path: '/chat', icon: '🤖' },
     { name: 'Profile', path: '/profile', icon: '👤' },
   ];

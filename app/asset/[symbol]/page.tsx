@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
 import { getMockChatResponse } from '@/lib/mockData';
-import { ChatMessage, Asset } from '@/types';
+import { ChatMessage, Asset, PredictionResponse, SentimentResponse, PredictionHistoryItem } from '@/types';
 import Link from 'next/link';
 
 type Timeframe = 'Monthly' | 'Weekly' | 'Daily';
@@ -43,7 +43,15 @@ export default function AssetPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analysis' | 'chat'>('analysis');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'sentiment' | 'chat'>('analysis');
+  
+  // Prediction API States
+  const [predictionData, setPredictionData] = useState<PredictionResponse | null>(null);
+  const [sentimentData, setSentimentData] = useState<SentimentResponse | null>(null);
+  const [historyData, setHistoryData] = useState<PredictionHistoryItem[]>([]);
+  const [loadingPrediction, setLoadingPrediction] = useState(false);
+  const [loadingSentiment, setLoadingSentiment] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   
   // Analysis Settings & Data
   const [accountBalance, setAccountBalance] = useState(10000);
@@ -302,26 +310,34 @@ export default function AssetPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.error('❌ ANALYSIS API ERROR');
+        console.error('Status:', response.status, response.statusText);
+        console.error('URL:', `${API_BASE_URL}/api/Analysis/comprehensive-report/${asset.symbol}?${queryParams}`);
+        console.error('Raw Response:', errorText);
+        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        
         let errorMessage = `${response.status} ${response.statusText}`;
         
-        try {
-          const errorJson = JSON.parse(errorText);
-          console.error('API Error Response:', {
-            status: response.status,
-            statusText: response.statusText,
-            errorDetails: errorJson
-          });
-          
-          // Extract validation errors if present
-          if (errorJson.errors) {
-            errorMessage = Object.entries(errorJson.errors)
-              .map(([field, messages]: [string, any]) => `${field}: ${messages.join(', ')}`)
-              .join('; ');
-          } else if (errorJson.title) {
-            errorMessage = errorJson.title;
+        if (errorText) {
+          try {
+            const errorJson = JSON.parse(errorText);
+            console.error('Parsed Error JSON:', errorJson);
+            
+            // Extract validation errors if present
+            if (errorJson.errors) {
+              errorMessage = Object.entries(errorJson.errors)
+                .map(([field, messages]: [string, any]) => `${field}: ${messages.join(', ')}`)
+                .join('; ');
+            } else if (errorJson.title) {
+              errorMessage = errorJson.title;
+            } else if (errorJson.message) {
+              errorMessage = errorJson.message;
+            }
+          } catch (parseError) {
+            // Not JSON, use raw text
+            errorMessage = errorText || errorMessage;
           }
-        } catch {
-          console.error('API Error Response (raw):', errorText);
         }
         
         throw new Error(`Failed to fetch analysis: ${errorMessage}`);
@@ -376,10 +392,94 @@ export default function AssetPage() {
     fetchAssets();
   }, [symbol]);
 
-  // Fetch analysis when asset is loaded
+  // Fetch prediction data
+  const fetchPrediction = async () => {
+    if (!asset) return;
+    setLoadingPrediction(true);
+    try {
+      const response = await fetch(`/api/prediction/${asset.symbol}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPredictionData(data);
+        console.log('✅ Prediction loaded for', asset.symbol);
+      } else {
+        console.warn(`Prediction API returned status: ${response.status} for ${asset.symbol}`);
+      }
+    } catch (error) {
+      if (error instanceof TypeError && (error as any).message === 'Failed to fetch') {
+        console.warn('⚠️ Prediction API unavailable (CORS or network issue)');
+      } else {
+        console.error('Error fetching prediction:', error);
+      }
+    } finally {
+      setLoadingPrediction(false);
+    }
+  };
+
+  // Fetch sentiment data
+  const fetchSentiment = async () => {
+    if (!asset) return;
+    setLoadingSentiment(true);
+    try {
+      const response = await fetch(`/api/prediction/${asset.symbol}/sentiment`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('📊 SENTIMENT API RESPONSE');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('Symbol:', asset.symbol);
+        console.log('Complete Response:', JSON.stringify(data, null, 2));
+        console.log('sentimentLabel:', data.sentimentLabel);
+        console.log('sentimentScore:', data.sentimentScore);
+        console.log('confidence:', data.confidence);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        setSentimentData(data);
+        console.log('✅ Sentiment loaded for', asset.symbol);
+      } else {
+        console.warn(`Sentiment API returned status: ${response.status}`);
+      }
+    } catch (error) {
+      if (error instanceof TypeError && (error as any).message === 'Failed to fetch') {
+        console.warn('⚠️ Sentiment API unavailable');
+      } else {
+        console.error('Error fetching sentiment:', error);
+      }
+    } finally {
+      setLoadingSentiment(false);
+    }
+  };
+
+  // Fetch prediction history
+  const fetchHistory = async () => {
+    if (!asset) return;
+    setLoadingHistory(true);
+    try {
+      const response = await fetch(`/api/prediction/${asset.symbol}/history?count=10`);
+      if (response.ok) {
+        const data = await response.json();
+        setHistoryData(data);
+        console.log('✅ History loaded:', data.length, 'records');
+      } else {
+        console.warn(`History API returned status: ${response.status}`);
+      }
+    } catch (error) {
+      if (error instanceof TypeError && (error as any).message === 'Failed to fetch') {
+        console.warn('⚠️ History API unavailable');
+      } else {
+        console.error('Error fetching history:', error);
+      }
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Fetch analysis and predictions when asset is loaded
   useEffect(() => {
     if (asset) {
       fetchAnalysis();
+      fetchPrediction();
+      fetchSentiment();
+      fetchHistory();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset]);
@@ -693,6 +793,46 @@ export default function AssetPage() {
                     ></div>
                   </div>
                 </div>
+                
+                {/* AI Prediction Section */}
+                {loadingPrediction && (
+                  <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-[#0a0f16] border-white/5' : 'bg-slate-50 border-gray-200'}`}>
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 rounded-full border-2 border-teal-500 border-t-transparent animate-spin"></div>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Loading AI prediction...</span>
+                    </div>
+                  </div>
+                )}
+                
+                {predictionData && predictionData.isSuccess && (
+                  <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-slate-50 border-gray-200'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        🔮 AI Prediction
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                        predictionData.recommendation === 'BUY' ? 'bg-[#0bda6c]/10 text-[#0bda6c]' : 
+                        predictionData.recommendation === 'SELL' ? 'bg-red-500/10 text-red-500' : 
+                        'bg-yellow-500/10 text-yellow-500'
+                      }`}>
+                        {predictionData.recommendation}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <p className={`text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Confidence</p>
+                        <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{(predictionData.confidence * 100).toFixed(0)}%</p>
+                      </div>
+                      <div>
+                        <p className={` text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Target Price</p>
+                        <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>${predictionData.suggestedEntry.toFixed(2)}</p>
+                      </div>
+                    </div>
+                    <p className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Final Score: {predictionData.finalScore.toFixed(3)} • Risk/Reward: {predictionData.riskRewardRatio.toFixed(2)}x
+                    </p>
+                  </div>
+                )}
               </div>
               <div className={`p-5 grid grid-cols-2 gap-4 overflow-y-auto ${isDark ? 'bg-[#0a0f16]/60' : 'bg-slate-50'}`} style={{maxHeight: 'calc(500px - 140px)'}}>
                 <div className="col-span-2">
@@ -736,31 +876,45 @@ export default function AssetPage() {
           </div>
         </div>
 
-        {/* Sticky Tabs for Analysis/Chat */}
-        <div className={`sticky top-0 z-10 rounded-xl border ${isDark ? 'bg-[#0b111b] border-white/5' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center gap-4 p-4">
-            <button
-              onClick={() => setActiveTab('analysis')}
-              className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-                activeTab === 'analysis'
-                  ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
-                  : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              📊 Analysis
-            </button>
-            <button
-              onClick={() => setActiveTab('chat')}
-              className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-                activeTab === 'chat'
-                  ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
-                  : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              💬 AI Chat
-            </button>
-          </div>
-        </div>
+        {/* 2-Column Layout: Tabs+Content on Left, History on Right */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column: Tabs + Content (2 columns width) */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Tabs for Analysis/Chat */}
+            <div className={`sticky top-0 z-10 rounded-xl border ${isDark ? 'bg-[#0b111b] border-white/5' : 'bg-white border-gray-200'}`}>
+              <div className="flex items-center gap-4 p-4">
+                <button
+                  onClick={() => setActiveTab('analysis')}
+                  className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                    activeTab === 'analysis'
+                      ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
+                      : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  📊 Analysis
+                </button>
+                <button
+                  onClick={() => setActiveTab('sentiment')}
+                  className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                    activeTab === 'sentiment'
+                      ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
+                      : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  🎭 Market Sentiment
+                </button>
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                    activeTab === 'chat'
+                      ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
+                      : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  💬 AI Chat
+                </button>
+              </div>
+            </div>
 
         {/* Comprehensive Analysis - Full Width */}
         {activeTab === 'analysis' && (
@@ -1055,7 +1209,187 @@ export default function AssetPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        )}
+
+        {/* Market Sentiment Tab */}
+        {activeTab === 'sentiment' && (
+          <div>
+          {sentimentData && !sentimentData.errorMessage ? (
+            <div className={`rounded-xl overflow-hidden shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+              <div className={`p-4 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <span>🎭</span>
+                      Market Sentiment
+                    </h3>
+                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                      {sentimentData.sourcesAnalyzed} sources • {sentimentData.analyzedAt && new Date(sentimentData.analyzedAt).toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full font-bold text-xs ${
+                    sentimentData.sentimentLabel === 'BULLISH' || sentimentData.sentimentLabel === 'positive' ? 'bg-[#0bda6c]/10 text-[#0bda6c]' :
+                    sentimentData.sentimentLabel === 'BEARISH' || sentimentData.sentimentLabel === 'negative' ? 'bg-red-500/10 text-red-500' :
+                    'bg-yellow-500/10 text-yellow-500'
+                  }`}>
+                    {sentimentData.sentimentLabel}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Sentiment Metrics Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className={isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}>
+                    <tr>
+                      <th className={`text-left p-3 text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Metric</th>
+                      <th className={`text-left p-3 text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Value</th>
+                      <th className={`text-left p-3 text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className={isDark ? 'bg-[#0f1520]/50' : 'bg-white'}>
+                      <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Score</td>
+                      <td className="p-3">
+                        <span className={`text-sm font-bold ${
+                          sentimentData.sentimentScore > 0 ? 'text-teal-500' : 
+                          sentimentData.sentimentScore < 0 ? 'text-red-500' : 
+                          isDark ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          {sentimentData.sentimentScore >= 0 ? '+' : ''}{(sentimentData.sentimentScore * 100).toFixed(0)}%
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <div className={`h-2 w-24 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                          <div 
+                            className={`h-full rounded-full ${sentimentData.sentimentScore >= 0 ? 'bg-gradient-to-r from-teal-500 to-cyan-500' : 'bg-gradient-to-r from-red-500 to-orange-500'}`}
+                            style={{ width: `${Math.abs(sentimentData.sentimentScore) * 100}%` }}
+                          ></div>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className={isDark ? 'bg-[#0a0f16]/30' : 'bg-slate-50/50'}>
+                      <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Confidence</td>
+                      <td className={`p-3 text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {(sentimentData.confidence * 100).toFixed(0)}%
+                      </td>
+                      <td className={`p-3 text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        AI certainty level
+                      </td>
+                    </tr>
+                    {sentimentData.keyDrivers && sentimentData.keyDrivers.length > 0 && (
+                      <tr className={isDark ? 'bg-[#0f1520]/50' : 'bg-white'}>
+                        <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Drivers</td>
+                        <td colSpan={2} className="p-3">
+                          <div className="space-y-1">
+                            {sentimentData.keyDrivers.slice(0, 2).map((driver, idx) => (
+                              <div key={idx} className={`text-xs flex items-start gap-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                <span className="text-teal-500">•</span>
+                                <span>{driver}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {sentimentData.opportunities && sentimentData.opportunities.length > 0 && (
+                      <tr className={isDark ? 'bg-[#0a0f16]/30' : 'bg-slate-50/50'}>
+                        <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Opportunities</td>
+                        <td colSpan={2} className="p-3">
+                          <div className="space-y-1">
+                            {sentimentData.opportunities.slice(0, 2).map((opp, idx) => (
+                              <div key={idx} className={`text-xs flex items-start gap-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                <span className="text-green-500">✓</span>
+                                <span>{opp}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {sentimentData.risks && sentimentData.risks.length > 0 && (
+                      <tr className={isDark ? 'bg-[#0f1520]/50' : 'bg-white'}>
+                        <td className={`p-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>Risks</td>
+                        <td colSpan={2} className="p-3">
+                          <div className="space-y-1">
+                            {sentimentData.risks.slice(0, 2).map((risk, idx) => (
+                              <div key={idx} className={`text-xs flex items-start gap-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                <span className="text-red-500">⚠</span>
+                                <span>{risk}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Summary Section */}
+              {sentimentData.summary && (
+                <div className={`p-4 border-t ${isDark ? 'border-white/5 bg-[#0a0f16]' : 'border-gray-200 bg-slate-50'}`}>
+                  <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {sentimentData.summary}
+                  </p>
+                </div>
+              )}
+              
+              {/* Recent News Section */}
+              {sentimentData.recentNews && sentimentData.recentNews.length > 0 && (
+                <div className={`p-4 border-t ${isDark ? 'border-white/5 bg-[#0a0f16]' : 'border-gray-200 bg-slate-50'}`}>
+                  <h4 className={`text-sm font-bold mb-3 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <span>📰</span>
+                    Recent News ({sentimentData.recentNews.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {sentimentData.recentNews.map((news, idx) => (
+                      <div key={idx} className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h5 className={`text-xs font-bold flex-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            {news.title}
+                          </h5>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${
+                            news.sentimentLabel === 'POSITIVE' ? 'bg-[#0bda6c]/10 text-[#0bda6c]' :
+                            news.sentimentLabel === 'NEGATIVE' ? 'bg-red-500/10 text-red-500' :
+                            'bg-gray-500/10 text-gray-500'
+                          }`}>
+                            {news.sentimentLabel}
+                          </span>
+                        </div>
+                        <p className={`text-xs leading-relaxed mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {news.summary}
+                        </p>
+                        <div className="flex items-center gap-3 text-[10px]">
+                          <span className={isDark ? 'text-gray-500' : 'text-gray-500'}>
+                            📍 {news.source}
+                          </span>
+                          {news.publishedAt && (
+                            <span className={isDark ? 'text-gray-500' : 'text-gray-500'}>
+                              🕒 {new Date(news.publishedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className={`text-center py-12 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+              <p className="text-base font-medium">No sentiment data available</p>
+              <p className="text-sm mt-2">Sentiment is loading automatically...</p>
+              <button
+                onClick={fetchSentiment}
+                className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg font-semibold text-sm transition-colors shadow-md"
+              >
+                Load Sentiment
+              </button>
+            </div>
+          )}
+          </div>
         )}
 
         {/* AI Chat */}
@@ -1155,6 +1489,82 @@ export default function AssetPage() {
             </div>
           </div>
         )}
+          </div>
+
+          {/* Right Column: Prediction History (Always Visible) */}
+          <div className="lg:col-span-1">
+            <div className={`rounded-xl overflow-hidden shadow-sm sticky top-6 ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
+              <div className={`p-4 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <span>📈</span>
+                      History
+                    </h3>
+                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>AI predictions</p>
+                  </div>
+                  <button
+                    onClick={fetchHistory}
+                    disabled={loadingHistory}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      loadingHistory 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+                    }`}
+                  >
+                    {loadingHistory ? '...' : '↻'}
+                  </button>
+                </div>
+              </div>
+              
+              {loadingHistory ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="h-6 w-6 rounded-full border-2 border-teal-500 border-t-transparent animate-spin mx-auto mb-2"></div>
+                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Loading...</p>
+                  </div>
+                </div>
+              ) : historyData.length > 0 ? (
+                <div className="max-h-[600px] overflow-y-auto">
+                  <table className="w-full">
+                    <thead className={`sticky top-0 ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                      <tr>
+                        <th className={`text-left p-2 text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Date</th>
+                        <th className={`text-left p-2 text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Signal</th>
+                        <th className={`text-left p-2 text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Conf%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historyData.map((item, idx) => (
+                        <tr key={item.id} className={idx % 2 === 0 ? (isDark ? 'bg-[#0f1520]/50' : 'bg-white') : (isDark ? 'bg-[#0a0f16]/30' : 'bg-slate-50/50')}>
+                          <td className={`p-2 text-xs ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>
+                            {new Date(item.predictedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </td>
+                          <td className="p-2">
+                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                              item.recommendation === 'BUY' ? 'bg-[#0bda6c]/15 text-[#0bda6c]' :
+                              item.recommendation === 'SELL' ? 'bg-red-500/15 text-red-500' :
+                              'bg-yellow-500/15 text-yellow-500'
+                            }`}>
+                              {item.recommendation}
+                            </span>
+                          </td>
+                          <td className={`p-2 text-xs ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>
+                            {(item.confidence * 100).toFixed(0)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className={`text-center py-8 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                  <p className="text-sm">No history</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </main>
 
       {/* Fullscreen Chart Modal */}

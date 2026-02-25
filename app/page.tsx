@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { Asset, Market } from '@/types';
+import { Asset, Market, PredictionResponse, DataSummaryResponse } from '@/types';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 
@@ -73,6 +73,11 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 30;
+  
+  // Prediction states
+  const [predictions, setPredictions] = useState<Record<string, PredictionResponse>>({});
+  const [dataSummary, setDataSummary] = useState<DataSummaryResponse | null>(null);
+  const [loadingPredictions, setLoadingPredictions] = useState(false);
 
   // Set sidebar initial state based on screen size
   useEffect(() => {
@@ -127,6 +132,30 @@ export default function Home() {
     fetchAssets();
   }, []);
 
+  // Fetch data summary on mount
+  useEffect(() => {
+    const fetchDataSummary = async () => {
+      try {
+        const response = await fetch('/api/prediction/data-summary');
+        if (response.ok) {
+          const data = await response.json();
+          setDataSummary(data);
+          console.log('✅ Data summary loaded:', data.totalSymbols, 'symbols');
+        } else {
+          console.warn(`Data summary API returned status: ${response.status}`);
+        }
+      } catch (error) {
+        if (error instanceof TypeError && (error as any).message === 'Failed to fetch') {
+          console.warn('⚠️ Data summary API unavailable');
+        } else {
+          console.error('Error fetching data summary:', error);
+        }
+      }
+    };
+
+    fetchDataSummary();
+  }, []);
+
   const filteredAssets = useMemo(() => {
     let filtered = selectedMarket === 'All'
       ? assets
@@ -159,6 +188,66 @@ export default function Home() {
     const endIndex = startIndex + ITEMS_PER_PAGE;
     return filteredAssets.slice(startIndex, endIndex);
   }, [filteredAssets, currentPage, ITEMS_PER_PAGE]);
+
+  // Fetch batch predictions for current page assets
+  useEffect(() => {
+    const fetchBatchPredictions = async () => {
+      // Don't fetch if no assets or still loading main assets
+      if (paginatedAssets.length === 0 || loading) return;
+      
+      setLoadingPredictions(true);
+      try {
+        const symbols = paginatedAssets.map(a => a.symbol).join(',');
+        
+        // Skip if symbols string is empty
+        if (!symbols) {
+          console.warn('No symbols to fetch predictions for');
+          return;
+        }
+        
+        const requestUrl = `/api/prediction/batch?symbols=${symbols}`;
+        
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('📤 BATCH PREDICTION REQUEST');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🔗 Full URL:', requestUrl);
+        console.log('📊 Number of symbols:', paginatedAssets.length);
+        console.log('📝 Complete symbols list:');
+        console.log(symbols);
+        console.log('📏 URL length:', requestUrl.length, 'characters');
+        console.log('⏰ Request time:', new Date().toISOString());
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        
+        const response = await fetch(requestUrl);
+        
+        if (response.ok) {
+          const data: PredictionResponse[] = await response.json();
+          const predictionsMap: Record<string, PredictionResponse> = {};
+          data.forEach(pred => {
+            if (pred.isSuccess) {
+              predictionsMap[pred.symbol] = pred;
+            }
+          });
+          setPredictions(predictionsMap);
+          console.log(`Successfully loaded ${Object.keys(predictionsMap).length} predictions`);
+        } else {
+          console.warn(`Prediction API returned status: ${response.status} ${response.statusText}`);
+        }
+      } catch (error) {
+        // More detailed error logging
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+          console.warn('⚠️ Prediction API fetch failed - This is likely a CORS issue or the API is not responding. Predictions will not be shown.');
+          console.warn('To fix: Ensure the API server allows requests from your domain, or the endpoint exists.');
+        } else {
+          console.error('Error fetching batch predictions:', error);
+        }
+      } finally {
+        setLoadingPredictions(false);
+      }
+    };
+
+    fetchBatchPredictions();
+  }, [paginatedAssets, loading]);
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0b0f16] text-white' : 'bg-[#f6f6f8] text-slate-900'}`}>
@@ -223,6 +312,41 @@ export default function Home() {
           <div className="flex-1 overflow-y-auto">
             <div className="px-6 py-5">
               <div className={`text-xs mb-4 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Home / Dashboard</div>
+
+              {/* Data Summary Widget */}
+              {dataSummary && (
+                <div className={`mb-5 rounded-xl border p-4 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-sm font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <span>🔮</span>
+                      Prediction Coverage
+                    </h3>
+                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                      Updated {new Date(dataSummary.generatedAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className={`p-3 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                      <p className={`text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Total Symbols</p>
+                      <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{dataSummary.totalSymbols}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                      <p className={`text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Ready for Prediction</p>
+                      <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{dataSummary.symbolsReadyForPrediction}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                      <p className={`text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Total Records</p>
+                      <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{dataSummary.totalRecords.toLocaleString()}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                      <p className={`text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Coverage</p>
+                      <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {((dataSummary.symbolsReadyForPrediction / dataSummary.totalSymbols) * 100).toFixed(0)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-3">
@@ -296,6 +420,7 @@ export default function Home() {
                         <th className="px-3 lg:px-5 py-3 text-left">Asset</th>
                         <th className="px-3 lg:px-5 py-3 text-left">Market</th>
                         <th className="hidden lg:table-cell px-5 py-3 text-left">Signal</th>
+                        <th className="hidden xl:table-cell px-5 py-3 text-left">AI Pred</th>
                         <th className="hidden lg:table-cell px-5 py-3 text-left">Strength</th>
                         <th className="hidden lg:table-cell px-5 py-3 text-left">Entry</th>
                         <th className="hidden lg:table-cell px-5 py-3 text-left">SL</th>
@@ -313,7 +438,7 @@ export default function Home() {
                               <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Loading...</span>
                             </div>
                           </td>
-                          <td colSpan={9} className="hidden lg:table-cell px-5 py-16 text-center">
+                          <td colSpan={10} className="hidden lg:table-cell px-5 py-16 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <div className="h-5 w-5 rounded-full border-2 border-teal-500 border-t-transparent animate-spin"></div>
                               <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Loading assets...</span>
@@ -331,7 +456,7 @@ export default function Home() {
                               Retry
                             </button>
                           </td>
-                          <td colSpan={9} className="hidden lg:table-cell px-5 py-16 text-center">
+                          <td colSpan={10} className="hidden lg:table-cell px-5 py-16 text-center">
                             <div className="text-red-400">{error}</div>
                             <button
                               onClick={() => window.location.reload()}
@@ -381,6 +506,32 @@ export default function Home() {
                                   >
                                     {asset.signal}
                                   </span>
+                                ) : (
+                                  <span className="text-xs text-gray-500">-</span>
+                                )}
+                              </td>
+                              <td className="hidden xl:table-cell px-5 py-4">
+                                {loadingPredictions ? (
+                                  <div className="flex items-center gap-1">
+                                    <div className="h-3 w-3 rounded-full border-2 border-teal-500 border-t-transparent animate-spin"></div>
+                                  </div>
+                                ) : predictions[asset.symbol] ? (
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                        predictions[asset.symbol].recommendation === 'BUY'
+                                          ? 'bg-[#0bda6c]/10 text-[#0bda6c]'
+                                          : predictions[asset.symbol].recommendation === 'SELL'
+                                          ? 'bg-red-500/10 text-red-500'
+                                          : 'bg-yellow-500/10 text-yellow-500'
+                                      }`}
+                                    >
+                                      {predictions[asset.symbol].recommendation}
+                                    </span>
+                                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      {(predictions[asset.symbol].confidence * 100).toFixed(0)}%
+                                    </span>
+                                  </div>
                                 ) : (
                                   <span className="text-xs text-gray-500">-</span>
                                 )}
