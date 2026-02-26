@@ -1068,9 +1068,9 @@ export default function AssetPage() {
                     </div>
                   </div>
 
-                  {/* Price Levels - Scrollable */}
-                  <div className="flex-1 overflow-y-auto">
-                    <div className={`p-5 ${isDark ? 'bg-[#0a0f16]/40' : 'bg-slate-50'}`}>
+                  {/* Price Levels */}
+                  <div className="flex-1">
+                    <div className={`p-5 ${isDark ? 'bg-[#0a0f16]/40' : 'bg-slate-50'} h-full overflow-visible`}>
                       <p className={`text-xs uppercase font-bold tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>💲 Price Levels</p>
                       
                       {/* 2x2 Grid for Price Levels */}
@@ -1487,8 +1487,7 @@ export default function AssetPage() {
                 <div className={`p-5 border-b ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        <span>🎭</span>
+                      <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         Market Sentiment Overview
                       </h3>
                       <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
@@ -1754,7 +1753,7 @@ export default function AssetPage() {
               <div className={`p-4 border-b ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
                 <div className="flex items-center gap-3">
                   <div className="bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg p-1.5 shadow-lg shadow-teal-500/20">
-                    <span className="text-white text-sm">✨</span>
+                    <span className="text-white text-sm">🤖</span>
                   </div>
                   <div>
                     <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>AI Assistant</h3>
