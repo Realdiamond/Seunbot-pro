@@ -1775,46 +1775,44 @@ export default function AssetPage() {
                           </div>
                         )}
                         {!loadingInitialMessage && chatMessages.map((message, idx) => (
-                          <div key={idx} className={`flex gap-3 ${message.role === 'user' ? 'max-w-[90%] ml-auto flex-row-reverse' : 'max-w-[90%]'}`}>
-                            <div className={`size-8 rounded-full flex-shrink-0 flex items-center justify-center ${
-                              message.role === 'user' ? (isDark ? 'bg-gray-700' : 'bg-gray-300') : 'bg-teal-500/10 border border-teal-500/20'
+                          <div key={idx} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`w-full md:max-w-[85%] rounded-2xl p-4 ${
+                              message.role === 'user'
+                                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/20'
+                                : isDark ? 'bg-[#0f1520] border border-white/10 text-gray-200' : 'bg-white border border-gray-200 text-slate-700'
                             }`}>
-                              <span className="text-xs">{message.role === 'user' ? '👤' : '🤖'}</span>
-                            </div>
-                            <div className={`space-y-1 ${message.role === 'user' ? 'text-right' : ''}`}>
-                              <div className={`p-3 rounded-2xl ${
-                                message.role === 'user'
-                                  ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-tr-none shadow-md shadow-teal-500/10'
-                                  : isDark ? 'bg-[#0f1520] border border-white/10 rounded-tl-none shadow-sm text-gray-200' : 'bg-white border border-gray-200 rounded-tl-none shadow-sm text-slate-700'
+                              {message.role === 'assistant' && (
+                                <div className={`text-xs mb-2 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>🤖 AI Assistant</div>
+                              )}
+                              <div className={`prose ${
+                                message.role === 'user' 
+                                  ? 'prose-invert max-w-none' 
+                                  : isDark 
+                                    ? 'prose-invert max-w-none' 
+                                    : 'prose-slate max-w-none'
                               }`}>
-                                <div className={`prose ${
-                                  message.role === 'user' 
-                                    ? 'prose-invert' 
-                                    : isDark 
-                                      ? 'prose-invert' 
-                                      : 'prose-slate'
-                                }`}>
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
-                                </div>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                               </div>
-                              <p className="text-[10px] text-gray-400 px-1">Just now</p>
+                              <p className={`text-xs mt-2 ${
+                                message.role === 'user' ? 'text-teal-100' : isDark ? 'text-gray-500' : 'text-gray-400'
+                              }`}>
+                                {new Date(message.timestamp ?? new Date()).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </p>
                             </div>
                           </div>
                         ))}
                         {isTyping && (
-                          <div className="flex gap-3 max-w-[90%]">
-                            <div className="size-8 rounded-full flex-shrink-0 flex items-center justify-center bg-teal-500/10 border border-teal-500/20">
-                              <span className="text-xs">🤖</span>
-                            </div>
-                            <div className="space-y-1">
-                              <div className={`p-3 rounded-2xl rounded-tl-none shadow-sm ${isDark ? 'bg-[#0f1520] border border-white/10' : 'bg-white border border-gray-200'}`}>
-                                <div className="flex gap-1">
-                                  <span className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></span>
-                                  <span className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
-                                  <span className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></span>
-                                </div>
+                          <div className="flex justify-start">
+                            <div className={`w-full md:max-w-[85%] rounded-2xl p-4 border ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border border-gray-200'}`}>
+                              <div className={`text-xs mb-2 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>🤖 AI Assistant</div>
+                              <div className="flex gap-1">
+                                <span className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></span>
+                                <span className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
+                                <span className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></span>
                               </div>
-                              <p className="text-[10px] text-gray-400 px-1">Typing...</p>
                             </div>
                           </div>
                         )}
@@ -1840,30 +1838,32 @@ export default function AssetPage() {
                         </div>
                       </div>
                     </div>
-                    <div className={`w-full md:w-64 p-4 flex flex-col gap-3 ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
-                      <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Suggested Prompts</p>
-                      {suggestedFollowups.length > 0 ? (
-                        suggestedFollowups.map((prompt, idx) => (
-                          <button key={idx} onClick={() => handleSuggestedPrompt(prompt)} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
-                            <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>{prompt}</p>
-                          </button>
-                        ))
-                      ) : (
-                        <>
-                          <button onClick={() => handleSuggestedPrompt('Where are the key buy zones?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
-                            <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Analyze Support Levels</p>
-                            <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Where are the key buy zones?</p>
-                          </button>
-                          <button onClick={() => handleSuggestedPrompt('What is the current Elliott Wave count?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
-                            <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Explain Elliott Wave</p>
-                            <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>What is the current wave count?</p>
-                          </button>
-                          <button onClick={() => handleSuggestedPrompt('Is the risk/reward ratio favorable?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
-                            <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Risk Assessment</p>
-                            <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Is the risk/reward ratio favorable?</p>
-                          </button>
-                        </>
-                      )}
+                    <div className={`w-full md:w-64 p-4 ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
+                      <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Suggested Prompts</p>
+                      <div className="flex flex-col gap-3 overflow-y-auto max-h-[400px]">
+                        {suggestedFollowups.length > 0 ? (
+                          suggestedFollowups.map((prompt, idx) => (
+                            <button key={idx} onClick={() => handleSuggestedPrompt(prompt)} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
+                              <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>{prompt}</p>
+                            </button>
+                          ))
+                        ) : (
+                          <>
+                            <button onClick={() => handleSuggestedPrompt('Where are the key buy zones?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
+                              <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Analyze Support Levels</p>
+                              <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Where are the key buy zones?</p>
+                            </button>
+                            <button onClick={() => handleSuggestedPrompt('What is the current Elliott Wave count?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
+                              <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Explain Elliott Wave</p>
+                              <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>What is the current wave count?</p>
+                            </button>
+                            <button onClick={() => handleSuggestedPrompt('Is the risk/reward ratio favorable?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
+                              <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Risk Assessment</p>
+                              <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Is the risk/reward ratio favorable?</p>
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
             </div>

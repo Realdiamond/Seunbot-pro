@@ -315,7 +315,7 @@ export default function ChatPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className={`lg:hidden px-3 py-2 rounded-lg border transition-colors ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-300 bg-gray-200 text-slate-900 hover:bg-gray-300'}`}
+                className={`lg:hidden h-9 w-9 rounded-lg transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}
               >
                 ☰
               </button>
@@ -324,7 +324,7 @@ export default function ChatPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsDark(!isDark)}
-                className={`px-3 py-2 rounded-lg border transition-colors ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'bg-gray-200 text-slate-900 hover:bg-gray-300'}`}
+                className={`h-9 w-9 rounded-lg transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}
               >
                 {isDark ? '☀️' : '🌙'}
               </button>
