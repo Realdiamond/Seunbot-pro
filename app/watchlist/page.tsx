@@ -348,7 +348,7 @@ export default function WatchlistPage() {
           <footer className={`mt-auto border-t py-6 ${isDark ? 'border-white/5 bg-[#0b0f16]' : 'border-gray-200 bg-white'}`}>
             <div className="max-w-[1600px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
               <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                © 2024 SeunBot Pro. Financial data provided for informational purposes only.
+                © 2026 SeunBot Pro. Financial data provided for informational purposes only.
               </p>
               <div className="flex gap-4">
                 <a className={`text-xs hover:text-teal-400 transition-colors ${isDark ? 'text-gray-500' : 'text-gray-600'}`} href="#">Terms of Service</a>

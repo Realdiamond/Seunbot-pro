@@ -239,8 +239,8 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#0b0f16] text-white' : 'bg-[#f6f6f8] text-slate-900'}`}>
-      <div className="flex h-screen overflow-hidden relative">
+    <div className={`h-[100dvh] flex flex-col ${isDark ? 'bg-[#0b0f16] text-white' : 'bg-[#f6f6f8] text-slate-900'}`}>
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Backdrop for mobile */}
         {sidebarOpen && (
           <div
