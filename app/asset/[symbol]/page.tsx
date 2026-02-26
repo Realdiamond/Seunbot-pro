@@ -869,7 +869,7 @@ export default function AssetPage() {
           <div className={`w-full md:w-auto grid grid-cols-3 md:flex md:flex-wrap md:items-center gap-2 md:gap-0 md:divide-x ${isDark ? 'md:divide-[#2b2839]' : 'md:divide-gray-300'}`}>
             <div className="md:px-2 lg:px-4 md:first:pl-0">
               <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Current Price</p>
-              <p className={`text-base md:text-lg lg:text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{asset.entry ? `$${asset.entry.toLocaleString()}` : '-'}</p>
+              <p className={`text-base md:text-lg lg:text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{predictionData?.currentPrice ? `$${predictionData.currentPrice.toLocaleString()}` : '-'}</p>
             </div>
             <div className="text-center md:text-left md:px-2 lg:px-4">
               <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>24h Change</p>
