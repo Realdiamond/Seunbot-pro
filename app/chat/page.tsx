@@ -382,20 +382,20 @@ export default function ChatPage() {
             </div>
 
             {/* Chat Input */}
-            <div className={`border-t px-6 py-4 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
-              <div className="flex gap-3">
+            <div className={`border-t px-4 sm:px-6 py-4 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
+              <div className="flex gap-2 sm:gap-3">
                 <input
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleChatSend()}
                   placeholder="Ask about market signals, trends, or specific assets..."
-                  className={`flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-teal-500/50 ${isDark ? 'bg-[#0f1520] border-white/10 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-slate-900 placeholder-gray-400'}`}
+                  className={`flex-1 px-3 sm:px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-teal-500/50 ${isDark ? 'bg-[#0f1520] border-white/10 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-slate-900 placeholder-gray-400'}`}
                 />
                 <button
                   onClick={handleChatSend}
                   disabled={!chatInput.trim()}
-                  className="px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg hover:from-teal-500 hover:to-cyan-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-500/30"
+                  className="px-4 sm:px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg hover:from-teal-500 hover:to-cyan-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-500/30 flex-shrink-0"
                 >
                   Send
                 </button>
