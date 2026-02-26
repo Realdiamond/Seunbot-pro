@@ -245,8 +245,8 @@ export default function Home() {
       if (!prediction) return true;
       // If signal filter is 'All', include all assets
       if (signalFilter === 'All') return true;
-      // Filter by signal recommendation
-      return prediction.recommendation === signalFilter;
+      // Filter by signal recommendation - use includes to catch variants like STRONG_SELL, STRONG_BUY
+      return prediction.recommendation.includes(signalFilter);
     });
 
     // Sort by confidence (strength) - high to low
@@ -276,10 +276,22 @@ export default function Home() {
       
       const matchesMarket = selectedMarket === 'All' || asset.market === selectedMarket;
       
+      // Determine the base signal type (handles STRONG_SELL, STRONG_BUY, etc.)
+      const recommendation = prediction.recommendation;
+      let signalType: 'BUY' | 'SELL' | 'HOLD' = 'HOLD';
+      
+      if (recommendation.includes('BUY')) {
+        signalType = 'BUY';
+      } else if (recommendation.includes('SELL')) {
+        signalType = 'SELL';
+      } else if (recommendation.includes('HOLD')) {
+        signalType = 'HOLD';
+      }
+      
       if (matchesMarket) {
-        counts[prediction.recommendation as 'BUY' | 'SELL' | 'HOLD']++;
+        counts[signalType]++;
       } else {
-        otherMarketCounts[prediction.recommendation as 'BUY' | 'SELL' | 'HOLD']++;
+        otherMarketCounts[signalType]++;
       }
     });
     
@@ -407,7 +419,7 @@ export default function Home() {
                       } ${isDark ? 'border-white/10 bg-[#0f1520] text-gray-300 hover:text-white hover:bg-white/5' : 'border-gray-300 bg-white text-gray-600 hover:text-slate-900 hover:bg-slate-50'}`}
                     >
                       <span className={isRefreshing ? 'animate-spin' : ''}>⟳</span>
-                      <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+                      <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                     </button>
                   </div>
                 </div>
@@ -677,16 +689,16 @@ export default function Home() {
                       )}
                       
                       {/* Show same signal in other markets */}
-                      {signalCounts.other[signalFilter] > 0 && selectedMarket !== 'All' && (
+                      {signalFilter !== 'All' && signalCounts.other[signalFilter as 'BUY' | 'SELL' | 'HOLD'] > 0 && selectedMarket !== 'All' && (
                         <div className="mt-3">
                           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {signalCounts.other[signalFilter]} {signalFilter} signal{signalCounts.other[signalFilter] !== 1 ? 's' : ''} in other markets
+                            {signalCounts.other[signalFilter as 'BUY' | 'SELL' | 'HOLD']} {signalFilter} signal{signalCounts.other[signalFilter as 'BUY' | 'SELL' | 'HOLD'] !== 1 ? 's' : ''} in other markets
                           </p>
                         </div>
                       )}
                       
                       {/* Completely empty state */}
-                      {signalCounts.current.BUY === 0 && signalCounts.current.SELL === 0 && signalCounts.current.HOLD === 0 && signalCounts.other[signalFilter] === 0 && (
+                      {signalCounts.current.BUY === 0 && signalCounts.current.SELL === 0 && signalCounts.current.HOLD === 0 && signalFilter !== 'All' && signalCounts.other[signalFilter as 'BUY' | 'SELL' | 'HOLD'] === 0 && (
                         <p className={`mt-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                           {searchQuery ? 'Try adjusting your search query.' : 'No trading signals available yet.'}
                         </p>

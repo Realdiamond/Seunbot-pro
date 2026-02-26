@@ -765,6 +765,14 @@ export default function AssetPage() {
       {/* Header */}
       <header className={`flex items-center justify-between border-b px-4 md:px-6 py-3 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
         <div className="flex items-center gap-4 md:gap-8">
+          <button
+            onClick={() => router.back()}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${isDark ? 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-gray-600 hover:text-slate-900'}`}
+            title="Go back"
+          >
+            <span className="text-lg">←</span>
+            <span className="hidden sm:inline text-sm">Back</span>
+          </button>
           <div className="flex items-center gap-2 md:gap-3">
             <div className="size-7 md:size-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white">
               <span className="text-base md:text-[20px]">🤖</span>
@@ -854,13 +862,6 @@ export default function AssetPage() {
         {/* Asset Header */}
         <section className={`flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-6 p-6 md:p-6 lg:p-8 rounded-xl shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
           <div className="flex items-center gap-3 md:gap-4">
-            <button
-              onClick={() => router.back()}
-              className={`h-9 w-9 rounded-lg transition-all ${isDark ? 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-gray-600 hover:text-slate-900'}`}
-              title="Go back"
-            >
-              ←
-            </button>
             {asset.imageUrl ? (
               <img 
                 src={asset.imageUrl} 

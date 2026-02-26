@@ -334,22 +334,28 @@ export default function ChatPage() {
           {/* Chat Container */}
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-4">
               {chatMessages.map((message, idx) => (
                 <div key={idx} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[75%] rounded-2xl p-4 ${
+                  <div className={`w-full md:max-w-[75%] rounded-2xl p-4 ${
                     message.role === 'user'
                       ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/20'
-                      : isDark ? 'bg-[#0f1520] border border-white/10 text-gray-200' : 'bg-white border border-gray-200 text-slate-900'
+                      : isDark ? 'bg-[#0f1520] border border-white/10 text-gray-200' : 'bg-white border border-gray-200 text-slate-700'
                   }`}>
                     {message.role === 'assistant' && (
-                      <div className="text-xs text-gray-400 mb-2 font-medium">🤖 AI Assistant</div>
+                      <div className={`text-xs mb-2 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>🤖 AI Assistant</div>
                     )}
-                    <div className="prose prose-invert">
+                    <div className={`prose ${
+                      message.role === 'user' 
+                        ? 'prose-invert' 
+                        : isDark 
+                          ? 'prose-invert max-w-none' 
+                          : 'prose-slate max-w-none'
+                    }`}>
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                     </div>
                     <p className={`text-xs mt-2 ${
-                      message.role === 'user' ? 'text-teal-100' : 'text-gray-500'
+                      message.role === 'user' ? 'text-teal-100' : isDark ? 'text-gray-500' : 'text-gray-400'
                     }`}>
                       {new Date(message.timestamp ?? new Date()).toLocaleTimeString('en-US', {
                         hour: '2-digit',
@@ -363,8 +369,8 @@ export default function ChatPage() {
               {/* Typing Indicator */}
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className={`max-w-[75%] rounded-2xl p-4 border ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
-                    <div className="text-xs text-gray-400 mb-2 font-medium">🤖 AI Assistant</div>
+                  <div className={`w-full md:max-w-[75%] rounded-2xl p-4 border ${isDark ? 'bg-[#0f1520] border-white/10' : 'bg-white border-gray-200'}`}>
+                    <div className={`text-xs mb-2 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>🤖 AI Assistant</div>
                     <div className="flex gap-1">
                       <span className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></span>
                       <span className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
