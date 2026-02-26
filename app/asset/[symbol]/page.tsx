@@ -2,9 +2,10 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
-import { getMockChatResponse } from '@/lib/mockData';
 import { ChatMessage, Asset, PredictionResponse, SentimentResponse, PredictionHistoryItem } from '@/types';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 type Timeframe = 'Monthly' | 'Weekly' | 'Daily';
 
@@ -32,17 +33,13 @@ export default function AssetPage() {
   const [timeframe, setTimeframe] = useState<Timeframe>('Daily');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { 
-      role: 'assistant', 
-      content: `I've analyzed the ${symbol} chart. We are currently seeing a confluence of bullish signals. Specifically, Wave 3 impulse is active and RSI is showing hidden bullish divergence. Would you like a deeper breakdown of the resistance levels?`,
-      timestamp: new Date().toISOString()
-    }
-  ]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [suggestedFollowups, setSuggestedFollowups] = useState<string[]>([]);
+  const [loadingInitialMessage, setLoadingInitialMessage] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [notificationOpen, setNotificationOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'analysis' | 'sentiment' | 'chat'>('analysis');
   
   // Prediction API States
@@ -473,6 +470,17 @@ export default function AssetPage() {
     }
   };
 
+  // Search results (useMemo must be before conditional returns)
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return assets.filter(
+      (asset) => 
+        asset.symbol.toLowerCase().includes(query) || 
+        asset.name.toLowerCase().includes(query)
+    ).slice(0, 5); // Limit to 5 results
+  }, [searchQuery, assets]);
+
   // Fetch analysis and predictions when asset is loaded
   useEffect(() => {
     if (asset) {
@@ -484,16 +492,39 @@ export default function AssetPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset]);
 
-  // Search results (useMemo must be before conditional returns)
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const query = searchQuery.toLowerCase();
-    return assets.filter(
-      (asset) => 
-        asset.symbol.toLowerCase().includes(query) || 
-        asset.name.toLowerCase().includes(query)
-    ).slice(0, 5); // Limit to 5 results
-  }, [searchQuery, assets]);
+  // Fetch initial chat message when page loads (pre-load chat for instant access)
+  useEffect(() => {
+    if (chatMessages.length === 0 && !loadingInitialMessage && asset) {
+      setLoadingInitialMessage(true);
+      
+      fetch(`/api/chat?message=Give me a quick analysis overview of this stock&symbol=${asset.symbol}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.conversationId) {
+            setConversationId(data.conversationId);
+          }
+          if (data.suggestedFollowups) {
+            setSuggestedFollowups(data.suggestedFollowups);
+          }
+          setChatMessages([{
+            role: 'assistant',
+            content: data.message || `I've analyzed ${asset.symbol}. How can I help you with this stock?`,
+            timestamp: new Date().toISOString()
+          }]);
+        })
+        .catch(error => {
+          console.error('Error loading initial chat message:', error);
+          setChatMessages([{
+            role: 'assistant',
+            content: `I'm ready to help you analyze ${asset.symbol}. What would you like to know?`,
+            timestamp: new Date().toISOString()
+          }]);
+        })
+        .finally(() => {
+          setLoadingInitialMessage(false);
+        });
+    }
+  }, [asset, chatMessages.length, loadingInitialMessage]);
 
   // Conditional returns AFTER all hooks
   if (loading) {
@@ -522,8 +553,8 @@ export default function AssetPage() {
   }
 
   // Handler functions
-  const handleChatSend = () => {
-    if (!chatInput.trim()) return;
+  const handleChatSend = async () => {
+    if (!chatInput.trim() || !asset) return;
 
     const userMessage: ChatMessage = { role: 'user', content: chatInput, timestamp: new Date().toISOString() };
     setChatMessages((prev) => [...prev, userMessage]);
@@ -531,23 +562,185 @@ export default function AssetPage() {
     setChatInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const aiResponse = getMockChatResponse(currentInput);
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: aiResponse, timestamp: new Date().toISOString() }]);
-      setIsTyping(false);
-    }, 500);
+    // Retry logic for 503/502 errors (Heroku dyno waking up)
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          // Wait before retrying (exponential backoff: 1s, 2s, 4s)
+          await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempt - 1), 5000)));
+        }
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            conversationId: conversationId,
+            message: currentInput,
+            symbol: asset.symbol,
+            includeMarketData: true,
+            includeAnalysis: true,
+            includeNews: true,
+            includeSentiment: true,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = new Error(`API returned ${response.status}`);
+          // Retry only on 503 (Service Unavailable) or 502 (Bad Gateway)
+          if ((response.status === 503 || response.status === 502) && attempt < maxRetries - 1) {
+            lastError = error;
+            continue; // Try again
+          }
+          throw error; // Don't retry other errors or on last attempt
+        }
+
+        const data = await response.json();
+        
+        // Update conversation ID
+        if (data.conversationId) {
+          setConversationId(data.conversationId);
+        }
+
+        // Update suggested follow-ups
+        if (data.suggestedFollowups) {
+          setSuggestedFollowups(data.suggestedFollowups);
+        }
+
+        setChatMessages((prev) => [...prev, { 
+          role: 'assistant', 
+          content: data.message || 'Sorry, I could not generate a response.', 
+          timestamp: new Date().toISOString() 
+        }]);
+        setIsTyping(false);
+        return; // Success, exit function
+      } catch (error) {
+        lastError = error as Error;
+        // Continue to next attempt if it's a retryable error
+        if (attempt < maxRetries - 1 && (lastError.message.includes('503') || lastError.message.includes('502'))) {
+          continue;
+        }
+        break; // Exit loop on non-retryable errors or last attempt
+      }
+    }
+
+    // If we get here, all retries failed
+    console.error('Chat API error after retries:', lastError);
+    let errorContent = 'Sorry, I encountered an error. Please try again.';
+    
+    if (lastError?.message.includes('503')) {
+      errorContent = 'The AI service is temporarily unavailable. It may be starting up - please wait a moment and try again.';
+    } else if (lastError?.message.includes('502')) {
+      errorContent = 'Connection to AI service failed. Please check your internet connection and try again.';
+    } else if (lastError?.message.includes('429')) {
+      errorContent = 'Too many requests. Please wait a moment before trying again.';
+    } else if (lastError?.message.includes('500')) {
+      errorContent = 'Internal server error. The AI service is experiencing issues. Please try again later.';
+    }
+
+    setChatMessages((prev) => [...prev, { 
+      role: 'assistant', 
+      content: errorContent, 
+      timestamp: new Date().toISOString() 
+    }]);
+    setIsTyping(false);
   };
 
-  const handleSuggestedPrompt = (prompt: string) => {
+  const handleSuggestedPrompt = async (prompt: string) => {
+    if (!asset) return;
+
     const userMessage: ChatMessage = { role: 'user', content: prompt, timestamp: new Date().toISOString() };
     setChatMessages((prev) => [...prev, userMessage]);
     setIsTyping(true);
 
-    setTimeout(() => {
-      const aiResponse = getMockChatResponse(prompt);
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: aiResponse, timestamp: new Date().toISOString() }]);
-      setIsTyping(false);
-    }, 500);
+    // Retry logic for 503/502 errors (Heroku dyno waking up)
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          // Wait before retrying (exponential backoff: 1s, 2s, 4s)
+          await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempt - 1), 5000)));
+        }
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            conversationId: conversationId,
+            message: prompt,
+            symbol: asset.symbol,
+            includeMarketData: true,
+            includeAnalysis: true,
+            includeNews: true,
+            includeSentiment: true,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = new Error(`API returned ${response.status}`);
+          // Retry only on 503 (Service Unavailable) or 502 (Bad Gateway)
+          if ((response.status === 503 || response.status === 502) && attempt < maxRetries - 1) {
+            lastError = error;
+            continue; // Try again
+          }
+          throw error; // Don't retry other errors or on last attempt
+        }
+
+        const data = await response.json();
+        
+        if (data.conversationId) {
+          setConversationId(data.conversationId);
+        }
+
+        if (data.suggestedFollowups) {
+          setSuggestedFollowups(data.suggestedFollowups);
+        }
+
+        setChatMessages((prev) => [...prev, { 
+          role: 'assistant', 
+          content: data.message || 'Sorry, I could not generate a response.', 
+          timestamp: new Date().toISOString() 
+        }]);
+        setIsTyping(false);
+        return; // Success, exit function
+      } catch (error) {
+        lastError = error as Error;
+        // Continue to next attempt if it's a retryable error
+        if (attempt < maxRetries - 1 && (lastError.message.includes('503') || lastError.message.includes('502'))) {
+          continue;
+        }
+        break; // Exit loop on non-retryable errors or last attempt
+      }
+    }
+
+    // If we get here, all retries failed
+    console.error('Chat API error after retries:', lastError);
+    let errorContent = 'Sorry, I encountered an error. Please try again.';
+    
+    if (lastError?.message.includes('503')) {
+      errorContent = 'The AI service is temporarily unavailable. It may be starting up - please wait a moment and try again.';
+    } else if (lastError?.message.includes('502')) {
+      errorContent = 'Connection to AI service failed. Please check your internet connection and try again.';
+    } else if (lastError?.message.includes('429')) {
+      errorContent = 'Too many requests. Please wait a moment before trying again.';
+    } else if (lastError?.message.includes('500')) {
+      errorContent = 'Internal server error. The AI service is experiencing issues. Please try again later.';
+    }
+
+    setChatMessages((prev) => [...prev, { 
+      role: 'assistant', 
+      content: errorContent, 
+      timestamp: new Date().toISOString() 
+    }]);
+    setIsTyping(false);
   };
 
   const handleSearchSelect = (selectedSymbol: string) => {
@@ -595,12 +788,23 @@ export default function AssetPage() {
                         onClick={() => handleSearchSelect(result.symbol)}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}
                       >
-                        <div className={`size-10 rounded-lg flex items-center justify-center text-sm font-bold ${isDark ? 'bg-white/10' : 'bg-slate-100'}`}>
-                          {result.symbol.slice(0, 2)}
+                        {result.imageUrl ? (
+                          <img 
+                            src={result.imageUrl} 
+                            alt={result.symbol}
+                            className="size-10 rounded-lg object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).nextElementSibling!.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className={`size-10 rounded-lg flex items-center justify-center text-sm font-bold ${isDark ? 'bg-white/10' : 'bg-slate-100'} ${result.imageUrl ? 'hidden' : ''}`}>
+                          {result.name.slice(0, 2)}
                         </div>
                         <div className="flex-1 text-left">
-                          <div className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{result.symbol}</div>
-                          <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{result.name}</div>
+                          <div className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{result.name}</div>
+                          <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{result.symbol}</div>
                         </div>
                         <span className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-white/5 text-gray-400' : 'bg-slate-100 text-gray-600'}`}>
                           {result.market}
@@ -623,7 +827,6 @@ export default function AssetPage() {
           <nav className="hidden lg:flex items-center gap-6">
             <Link href="/" className={`text-sm font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}>Dashboard</Link>
             <Link href="/chat" className={`text-sm font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}>AI Chat</Link>
-            <Link href="/profile" className={`text-sm font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}>Profile</Link>
           </nav>
           <div className={`h-6 w-px hidden lg:block ${isDark ? 'bg-white/10' : 'bg-gray-300'}`}></div>
           <button
@@ -632,36 +835,6 @@ export default function AssetPage() {
           >
             {isDark ? '☀️' : '🌙'}
           </button>
-          <div className="relative">
-            <button
-              onClick={() => setNotificationOpen(!notificationOpen)}
-              className={`h-9 w-9 rounded-lg relative transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}
-            >
-              🔔
-              <span className="absolute top-1 right-1 h-2 w-2 bg-teal-500 rounded-full"></span>
-            </button>
-            {notificationOpen && (
-              <div className={`absolute right-0 mt-2 w-80 rounded-lg border shadow-xl z-50 ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
-                <div className={`p-4 border-b ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Notifications</h3>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  <div className={`p-4 border-b ${isDark ? 'hover:bg-white/5 border-white/5' : 'hover:bg-slate-50 border-gray-100'}`}>
-                    <p className={`text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>New BUY signal: {symbol}</p>
-                    <p className="text-xs text-gray-500">2 minutes ago</p>
-                  </div>
-                  <div className={`p-4 border-b ${isDark ? 'hover:bg-white/5 border-white/5' : 'hover:bg-slate-50 border-gray-100'}`}>
-                    <p className={`text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>Analysis updated for {symbol}</p>
-                    <p className="text-xs text-gray-500">15 minutes ago</p>
-                  </div>
-                  <div className={`p-4 ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
-                    <p className={`text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>Market analysis updated</p>
-                    <p className="text-xs text-gray-500">1 hour ago</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </header>
 
@@ -670,8 +843,20 @@ export default function AssetPage() {
         {/* Asset Header */}
         <section className={`flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-6 p-6 md:p-6 lg:p-8 rounded-xl shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
           <div className="flex items-center gap-3 md:gap-4">
-            <div className="size-10 md:size-12 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
-              <span className="text-xl md:text-2xl">₿</span>
+            {asset.imageUrl ? (
+              <img 
+                src={asset.imageUrl} 
+                alt={asset.symbol}
+                className="size-10 md:size-12 rounded-full object-cover border border-orange-500/20"
+                onError={(e) => {
+                  // Fallback to icon if image fails to load
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).nextElementSibling!.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div className={`size-10 md:size-12 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20 ${asset.imageUrl ? 'hidden' : ''}`}>
+              <span className="text-xl md:text-2xl">{asset.name?.slice(0, 1) || '₿'}</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -933,36 +1118,36 @@ export default function AssetPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Tabs for Analysis/Chat */}
             <div className={`sticky top-0 z-10 rounded-xl border ${isDark ? 'bg-[#0b111b] border-white/5' : 'bg-white border-gray-200'}`}>
-              <div className="flex items-center gap-4 p-4">
+              <div className="flex items-center gap-1.5 md:gap-4 p-2 md:p-4">
                 <button
                   onClick={() => setActiveTab('analysis')}
-                  className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                  className={`flex-1 md:flex-none px-2 md:px-6 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium md:font-semibold transition-all ${
                     activeTab === 'analysis'
                       ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
                       : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  📊 Analysis
+                  <span className="hidden md:inline">📊 </span>Analysis
                 </button>
                 <button
                   onClick={() => setActiveTab('sentiment')}
-                  className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                  className={`flex-1 md:flex-none px-2 md:px-6 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium md:font-semibold transition-all ${
                     activeTab === 'sentiment'
                       ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
                       : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  🎭 Market Sentiment
+                  <span className="hidden md:inline">🎭 </span>Market Sentiment
                 </button>
                 <button
                   onClick={() => setActiveTab('chat')}
-                  className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                  className={`flex-1 md:flex-none px-2 md:px-6 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium md:font-semibold transition-all ${
                     activeTab === 'chat'
                       ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30'
                       : isDark ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-gray-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  💬 AI Chat
+                  <span className="hidden md:inline">💬 </span>AI Chat
                 </button>
               </div>
             </div>
@@ -1560,7 +1745,15 @@ export default function AssetPage() {
               <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
                     <div className={`flex-1 flex flex-col min-h-[300px] border-b md:border-b-0 md:border-r relative ${isDark ? 'border-white/5' : 'border-gray-200'}`}>
                       <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDark ? 'bg-[#0a0f16]/50' : 'bg-slate-50/50'}`}>
-                        {chatMessages.map((message, idx) => (
+                        {loadingInitialMessage && (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="text-center">
+                              <div className="h-8 w-8 rounded-full border-2 border-teal-500 border-t-transparent animate-spin mx-auto mb-2"></div>
+                              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Loading AI assistant...</p>
+                            </div>
+                          </div>
+                        )}
+                        {!loadingInitialMessage && chatMessages.map((message, idx) => (
                           <div key={idx} className={`flex gap-3 ${message.role === 'user' ? 'max-w-[90%] ml-auto flex-row-reverse' : 'max-w-[90%]'}`}>
                             <div className={`size-8 rounded-full flex-shrink-0 flex items-center justify-center ${
                               message.role === 'user' ? (isDark ? 'bg-gray-700' : 'bg-gray-300') : 'bg-teal-500/10 border border-teal-500/20'
@@ -1573,7 +1766,15 @@ export default function AssetPage() {
                                   ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-tr-none shadow-md shadow-teal-500/10'
                                   : isDark ? 'bg-[#0f1520] border border-white/10 rounded-tl-none shadow-sm text-gray-200' : 'bg-white border border-gray-200 rounded-tl-none shadow-sm text-slate-700'
                               }`}>
-                                <p className="text-sm leading-relaxed">{message.content}</p>
+                                <div className={`prose ${
+                                  message.role === 'user' 
+                                    ? 'prose-invert' 
+                                    : isDark 
+                                      ? 'prose-invert' 
+                                      : 'prose-slate'
+                                }`}>
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                                </div>
                               </div>
                               <p className="text-[10px] text-gray-400 px-1">Just now</p>
                             </div>
@@ -1620,18 +1821,28 @@ export default function AssetPage() {
                     </div>
                     <div className={`w-full md:w-64 p-4 flex flex-col gap-3 ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
                       <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Suggested Prompts</p>
-                      <button onClick={() => handleSuggestedPrompt('Where are the key buy zones?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
-                        <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Analyze Support Levels</p>
-                        <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Where are the key buy zones?</p>
-                      </button>
-                      <button onClick={() => handleSuggestedPrompt('What is the current Elliott Wave count?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
-                        <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Explain Elliott Wave</p>
-                        <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>What is the current wave count?</p>
-                      </button>
-                      <button onClick={() => handleSuggestedPrompt('Is the risk/reward ratio favorable?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
-                        <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Risk Assessment</p>
-                        <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Is the risk/reward ratio favorable?</p>
-                      </button>
+                      {suggestedFollowups.length > 0 ? (
+                        suggestedFollowups.map((prompt, idx) => (
+                          <button key={idx} onClick={() => handleSuggestedPrompt(prompt)} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
+                            <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>{prompt}</p>
+                          </button>
+                        ))
+                      ) : (
+                        <>
+                          <button onClick={() => handleSuggestedPrompt('Where are the key buy zones?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
+                            <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Analyze Support Levels</p>
+                            <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Where are the key buy zones?</p>
+                          </button>
+                          <button onClick={() => handleSuggestedPrompt('What is the current Elliott Wave count?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
+                            <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Explain Elliott Wave</p>
+                            <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>What is the current wave count?</p>
+                          </button>
+                          <button onClick={() => handleSuggestedPrompt('Is the risk/reward ratio favorable?')} className={`text-left p-3 rounded-lg border hover:border-teal-500/50 hover:shadow-sm transition-all group ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-200 bg-white'}`}>
+                            <p className={`text-xs font-bold group-hover:text-teal-400 transition-colors ${isDark ? 'text-gray-200' : 'text-slate-800'}`}>Risk Assessment</p>
+                            <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Is the risk/reward ratio favorable?</p>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
             </div>

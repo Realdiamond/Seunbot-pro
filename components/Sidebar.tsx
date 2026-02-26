@@ -16,7 +16,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, isDark }: Sidebar
     { name: 'Dashboard', path: '/', icon: '📊' },
     { name: 'Watchlist', path: '/watchlist', icon: '⭐' },
     { name: 'AI Chat', path: '/chat', icon: '🤖' },
-    { name: 'Profile', path: '/profile', icon: '👤' },
   ];
 
   return (
@@ -76,16 +75,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, isDark }: Sidebar
             </Link>
           ))}
         </nav>
-
-        <div className={`px-4 py-4 border-t ${isDark ? 'border-white/5' : 'border-gray-200'}`}>
-          <div className="flex items-center gap-3">
-            <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>AT</div>
-            <div className={`${sidebarOpen ? 'block' : 'hidden'}`}>
-              <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Alex Trader</p>
-              <p className="text-xs text-gray-500">Pro Plan</p>
-            </div>
-          </div>
-        </div>
       </div>
     </aside>
     </>

@@ -9,17 +9,8 @@ export interface Asset {
   name: string;
   exchange?: string; // From API: NSENG, NYSE, etc.
   sector?: string; // From API
+  imageUrl?: string; // From API: Firebase storage URL
   market?: Market; // Derived from exchange
-  signal?: SignalType;
-  strength?: number; // 0.0 - 5.0
-  entry?: number;
-  stopLoss?: number; // percentage
-  takeProfit1?: number; // percentage
-  takeProfit2?: number; // percentage
-  positionSize?: string; // e.g., "2%", "3%"
-  elliottWave?: string;
-  smcZone?: string; // Smart Money Concept zone
-  gann?: string;
   updatedAt?: string; // ISO date string
 }
 
@@ -29,12 +20,46 @@ export interface ChatMessage {
   timestamp?: string;
 }
 
+export interface ChatSource {
+  type: string;
+  symbol?: string;
+  summary: string;
+  relevance: number;
+  data?: Record<string, any>;
+}
+
+export interface ChatMetrics {
+  processingTimeMs: number;
+  tokensUsed: number;
+  sourcesUsed: number;
+  conversationTurns: number;
+}
+
 export interface ChatRequest {
-  question: string;
+  conversationId?: string;
+  message: string;
+  symbol?: string;
+  includeMarketData?: boolean;
+  includeAnalysis?: boolean;
+  includeNews?: boolean;
+  includeSentiment?: boolean;
+  maxSources?: number;
 }
 
 export interface ChatResponse {
-  answer: string;
+  conversationId: string;
+  message: string;
+  sources?: ChatSource[];
+  metrics?: ChatMetrics;
+  suggestedFollowups?: string[];
+  knowledgeSource?: string;
+}
+
+export interface ChatExamples {
+  general: string[];
+  stockAnalysis: string[];
+  technical: string[];
+  advisory: string[];
 }
 
 export interface UserProfile {

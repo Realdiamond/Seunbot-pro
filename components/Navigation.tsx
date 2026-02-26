@@ -11,7 +11,6 @@ export default function Navigation() {
   const navItems = [
     { name: 'Dashboard', path: '/' },
     { name: 'AI Chat', path: '/chat' },
-    { name: 'Profile', path: '/profile' },
   ];
 
   return (

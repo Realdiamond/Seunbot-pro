@@ -10,7 +10,6 @@ const API_BASE_URL = 'https://seun-bot-4fb16422b74d.herokuapp.com';
 export default function WatchlistPage() {
   const [isDark, setIsDark] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [notificationOpen, setNotificationOpen] = useState(false);
   
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
   const [analysisResult, setAnalysisResult] = useState<WatchlistAnalysisResponse | null>(null);
@@ -160,15 +159,6 @@ export default function WatchlistPage() {
               >
                 {isDark ? '☀️' : '🌙'}
               </button>
-              <div className="relative">
-                <button
-                  onClick={() => setNotificationOpen(!notificationOpen)}
-                  className={`h-9 w-9 rounded-lg relative transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-slate-900'}`}
-                >
-                  🔔
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-teal-500 rounded-full"></span>
-                </button>
-              </div>
             </div>
           </header>
 
