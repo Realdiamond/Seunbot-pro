@@ -35,14 +35,20 @@ const formatRelativeTime = (isoDate: string) => {
   return `${days}d ago`;
 };
 
-type SignalFilter = 'BUY' | 'SELL' | 'HOLD';
+type SignalFilter = 'All' | 'BUY' | 'SELL' | 'HOLD';
 
 export default function Home() {
   const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [signalFilter, setSignalFilter] = useState<SignalFilter>('BUY');
-  const [isDark, setIsDark] = useState(true);
+  const [signalFilter, setSignalFilter] = useState<SignalFilter>('All');
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      return saved !== 'light'; // default to dark
+    }
+    return true;
+  });
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +65,11 @@ export default function Home() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+  // Save theme to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   // Set sidebar initial state based on screen size
   useEffect(() => {
@@ -232,6 +243,8 @@ export default function Home() {
       const prediction = predictions[asset.symbol];
       // If no prediction yet, include the asset
       if (!prediction) return true;
+      // If signal filter is 'All', include all assets
+      if (signalFilter === 'All') return true;
       // Filter by signal recommendation
       return prediction.recommendation === signalFilter;
     });
@@ -366,35 +379,35 @@ export default function Home() {
               )}
 
               <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex-1 min-w-[240px]">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="flex-1">
                     <div className="relative">
                       <input
                         type="text"
                         placeholder="Search symbols (e.g., TSLA, BTC)..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className={`w-full rounded-lg border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${isDark ? 'border-white/10 bg-[#0f1520] text-white placeholder-gray-500' : 'border-gray-300 bg-white text-slate-900 placeholder-gray-400'}`}
+                        className={`w-full rounded-lg border px-3 md:px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40 ${isDark ? 'border-white/10 bg-[#0f1520] text-white placeholder-gray-500' : 'border-gray-300 bg-white text-slate-900 placeholder-gray-400'}`}
                       />
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                     {lastUpdated && (
-                      <span className={`text-xs hidden md:block ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                      <span className={`text-xs hidden lg:block ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                         Updated {getRelativeTimeString(lastUpdated)}
                       </span>
                     )}
                     <button
                       onClick={handleRefresh}
                       disabled={isRefreshing || loading}
-                      className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all ${
+                      className={`flex items-center gap-2 rounded-lg border px-3 md:px-4 py-2.5 text-sm font-medium transition-all whitespace-nowrap ${
                         isRefreshing || loading
                           ? 'opacity-50 cursor-not-allowed'
                           : ''
                       } ${isDark ? 'border-white/10 bg-[#0f1520] text-gray-300 hover:text-white hover:bg-white/5' : 'border-gray-300 bg-white text-gray-600 hover:text-slate-900 hover:bg-slate-50'}`}
                     >
                       <span className={isRefreshing ? 'animate-spin' : ''}>⟳</span>
-                      <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+                      <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                     </button>
                   </div>
                 </div>
@@ -416,6 +429,19 @@ export default function Home() {
                   <div className="ml-auto flex items-center gap-2">
                     <span className={`hidden lg:inline text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Filter by Signal:</span>
                     <div className={`flex rounded-lg border p-0.5 lg:p-1 ${isDark ? 'border-white/10 bg-[#0f1520]' : 'border-gray-300 bg-white'}`}>
+                      <button
+                        onClick={() => setSignalFilter('All')}
+                        disabled={loadingPredictions}
+                        className={`px-2 py-1 lg:px-4 lg:py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all ${
+                          loadingPredictions 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : signalFilter === 'All'
+                            ? 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                            : isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'
+                        }`}
+                      >
+                        All
+                      </button>
                       <button
                         onClick={() => setSignalFilter('BUY')}
                         disabled={loadingPredictions}

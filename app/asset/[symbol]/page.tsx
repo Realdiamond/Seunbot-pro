@@ -29,7 +29,13 @@ export default function AssetPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      return saved !== 'light';
+    }
+    return true;
+  });
   const [timeframe, setTimeframe] = useState<Timeframe>('Daily');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -481,6 +487,11 @@ export default function AssetPage() {
     ).slice(0, 5); // Limit to 5 results
   }, [searchQuery, assets]);
 
+  // Save theme to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
   // Fetch analysis and predictions when asset is loaded
   useEffect(() => {
     if (asset) {
@@ -843,6 +854,13 @@ export default function AssetPage() {
         {/* Asset Header */}
         <section className={`flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-6 p-6 md:p-6 lg:p-8 rounded-xl shadow-sm ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
           <div className="flex items-center gap-3 md:gap-4">
+            <button
+              onClick={() => router.back()}
+              className={`h-9 w-9 rounded-lg transition-all ${isDark ? 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-gray-600 hover:text-slate-900'}`}
+              title="Go back"
+            >
+              ←
+            </button>
             {asset.imageUrl ? (
               <img 
                 src={asset.imageUrl} 
@@ -869,7 +887,9 @@ export default function AssetPage() {
           <div className={`w-full md:w-auto grid grid-cols-3 md:flex md:flex-wrap md:items-center gap-2 md:gap-0 md:divide-x ${isDark ? 'md:divide-[#2b2839]' : 'md:divide-gray-300'}`}>
             <div className="md:px-2 lg:px-4 md:first:pl-0">
               <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Current Price</p>
-              <p className={`text-base md:text-lg lg:text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{predictionData?.currentPrice ? `$${predictionData.currentPrice.toLocaleString()}` : '-'}</p>
+              <p className={`text-base md:text-lg lg:text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {predictionData?.currentPrice ? `${asset.market === 'NGX' ? '₦' : '$'}${predictionData.currentPrice.toLocaleString()}` : '-'}
+              </p>
             </div>
             <div className="text-center md:text-left md:px-2 lg:px-4">
               <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>24h Change</p>

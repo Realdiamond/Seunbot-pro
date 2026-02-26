@@ -10,10 +10,36 @@ export default function ChatPage() {
   const [chatInput, setChatInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      return saved !== 'light';
+    }
+    return true;
+  });
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [suggestedFollowups, setSuggestedFollowups] = useState<string[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  // Save theme to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
+  // Set sidebar initial state based on screen size
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) { // lg breakpoint
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Load chat from localStorage on mount
   useEffect(() => {
@@ -214,12 +240,22 @@ export default function ChatPage() {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0b0f16] text-white' : 'bg-[#f6f6f8] text-slate-900'}`}>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden relative">
+        {/* Backdrop for mobile */}
+        {sidebarOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 z-30"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
         {/* Sidebar */}
         <aside
-          className={`border-r transition-all duration-300 ${
-            sidebarOpen ? 'w-64' : 'w-20'
-          } ${isDark ? 'border-white/5 bg-[#0a0f16]' : 'border-gray-200 bg-white'}`}
+          className={`border-r transition-all duration-300 z-40 ${
+            sidebarOpen ? 'lg:w-64' : 'lg:w-20'
+          } ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          } fixed lg:relative h-full w-64 ${isDark ? 'border-white/5 bg-[#0a0f16]' : 'border-gray-200 bg-white'}`}
         >
           <div className="h-full flex flex-col">
             <div className="flex items-center justify-between px-4 py-5">
@@ -277,6 +313,12 @@ export default function ChatPage() {
           {/* Header */}
           <header className={`flex items-center justify-between border-b px-6 py-4 ${isDark ? 'border-white/5 bg-[#0b111b]' : 'border-gray-200 bg-white'}`}>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className={`lg:hidden px-3 py-2 rounded-lg border transition-colors ${isDark ? 'border-white/10 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-300 bg-gray-200 text-slate-900 hover:bg-gray-300'}`}
+              >
+                ☰
+              </button>
               <h1 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>AI Market Chat</h1>
             </div>
             <div className="flex items-center gap-3">

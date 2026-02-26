@@ -8,8 +8,19 @@ import Sidebar from '@/components/Sidebar';
 const API_BASE_URL = 'https://seun-bot-4fb16422b74d.herokuapp.com';
 
 export default function WatchlistPage() {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      return saved !== 'light';
+    }
+    return true;
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Save theme to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
   
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
   const [analysisResult, setAnalysisResult] = useState<WatchlistAnalysisResponse | null>(null);
