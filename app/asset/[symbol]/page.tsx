@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
-import { ChatMessage, Asset, PredictionResponse, SentimentResponse, PredictionHistoryItem } from '@/types';
+import { ChatMessage, Asset, PredictionResponse, SentimentResponse, PredictionHistoryItem, LivePriceResponse } from '@/types';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -55,6 +55,10 @@ export default function AssetPage() {
   const [loadingPrediction, setLoadingPrediction] = useState(false);
   const [loadingSentiment, setLoadingSentiment] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  
+  // Live Price Data
+  const [livePriceData, setLivePriceData] = useState<LivePriceResponse | null>(null);
+  const [loadingLivePrice, setLoadingLivePrice] = useState(false);
   
   // Analysis Settings & Data
   const [accountBalance, setAccountBalance] = useState(10000);
@@ -395,6 +399,30 @@ export default function AssetPage() {
     fetchAssets();
   }, [symbol]);
 
+  // Fetch live price data
+  const fetchLivePrice = async () => {
+    if (!asset) return;
+    setLoadingLivePrice(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/Assets/live-prices?symbol=${asset.name}`);
+      if (response.ok) {
+        const data = await response.json();
+        setLivePriceData(data);
+        console.log('✅ Live price loaded for', asset.name, data);
+      } else {
+        console.warn(`Live price API returned status: ${response.status} for ${asset.name}`);
+      }
+    } catch (error) {
+      if (error instanceof TypeError && (error as any).message === 'Failed to fetch') {
+        console.warn('⚠️ Live price API unavailable');
+      } else {
+        console.error('Error fetching live price:', error);
+      }
+    } finally {
+      setLoadingLivePrice(false);
+    }
+  };
+
   // Fetch prediction data
   const fetchPrediction = async () => {
     if (!asset) return;
@@ -495,6 +523,7 @@ export default function AssetPage() {
   // Fetch analysis and predictions when asset is loaded
   useEffect(() => {
     if (asset) {
+      fetchLivePrice();
       fetchAnalysis();
       fetchPrediction();
       fetchSentiment();
@@ -890,23 +919,43 @@ export default function AssetPage() {
             <div className="md:px-2 lg:px-4 md:first:pl-0">
               <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Current Price</p>
               <p className={`text-base md:text-lg lg:text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                {predictionData?.currentPrice ? `${asset.market === 'NGX' ? '₦' : '$'}${predictionData.currentPrice.toLocaleString()}` : '-'}
+                {livePriceData?.isDataAvailable && livePriceData.data 
+                  ? `${asset.market === 'NGX' ? '₦' : '$'}${livePriceData.data.price.toLocaleString()}` 
+                  : predictionData?.currentPrice 
+                  ? `${asset.market === 'NGX' ? '₦' : '$'}${predictionData.currentPrice.toLocaleString()}` 
+                  : '-'}
               </p>
             </div>
             <div className="text-center md:text-left md:px-2 lg:px-4">
               <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>24h Change</p>
-              <div className="flex items-center justify-center md:justify-start gap-1 text-[#0bda6c]">
-                <span>↗</span>
-                <span className="text-sm md:text-base lg:text-lg font-bold">+2.45%</span>
+              <div className={`flex items-center justify-center md:justify-start gap-1 ${
+                livePriceData?.isDataAvailable && livePriceData.data 
+                  ? livePriceData.data.change24hPct >= 0 ? 'text-[#0bda6c]' : 'text-red-500'
+                  : 'text-[#0bda6c]'
+              }`}>
+                <span>{livePriceData?.isDataAvailable && livePriceData.data && livePriceData.data.change24hPct >= 0 ? '↗' : '↘'}</span>
+                <span className="text-sm md:text-base lg:text-lg font-bold">
+                  {livePriceData?.isDataAvailable && livePriceData.data 
+                    ? `${livePriceData.data.change24hPct >= 0 ? '+' : ''}${livePriceData.data.change24hPct.toFixed(2)}%` 
+                    : '-'}
+                </span>
               </div>
             </div>
             <div className="text-right md:text-left md:px-2 lg:px-4">
               <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>24h Volume</p>
-              <p className={`text-sm md:text-base lg:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>$34.2B</p>
+              <p className={`text-sm md:text-base lg:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {livePriceData?.isDataAvailable && livePriceData.data 
+                  ? `${asset.market === 'NGX' ? '₦' : '$'}${(parseFloat(livePriceData.data.volume24h) / 1_000_000).toFixed(1)}M` 
+                  : '-'}
+              </p>
             </div>
             <div className="md:px-2 lg:px-4 hidden sm:block">
               <p className={`text-xs md:text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Market Cap</p>
-              <p className={`text-sm md:text-base lg:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>$1.2T</p>
+              <p className={`text-sm md:text-base lg:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {livePriceData?.isDataAvailable && livePriceData.data 
+                  ? `${asset.market === 'NGX' ? '₦' : '$'}${(parseFloat(livePriceData.data.marketCap) / 1_000_000_000).toFixed(1)}B` 
+                  : '-'}
+              </p>
             </div>
           </div>
         </section>

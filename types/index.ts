@@ -214,3 +214,22 @@ export interface DataSummaryResponse {
   symbols: DataSummarySymbol[];
   generatedAt: string;
 }
+
+export interface LivePriceData {
+  symbol: string;
+  companyName: string;
+  price: number;
+  change24hPct: number;
+  change52wPct: number;
+  marketCap: string;
+  volume24h: string;
+  fetchedAt: string;
+}
+
+export interface LivePriceResponse {
+  success: boolean;
+  lastRefreshed: string;
+  isDataAvailable: boolean;
+  data: LivePriceData;
+  message?: string;
+}
