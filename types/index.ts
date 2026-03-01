@@ -69,7 +69,7 @@ export interface UserProfile {
   notifications: boolean;
 }
 
-export type Timeframe = 'H4' | 'Daily' | 'Weekly' | 'Monthly';
+export type Timeframe = 'Daily' | 'Weekly' | 'Monthly';
 
 export interface ChartData {
   symbol: string;

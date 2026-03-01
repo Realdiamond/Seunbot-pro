@@ -2,12 +2,11 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
-import { ChatMessage, Asset, PredictionResponse, SentimentResponse, PredictionHistoryItem, LivePriceResponse } from '@/types';
+import { ChatMessage, Asset, PredictionResponse, SentimentResponse, PredictionHistoryItem, LivePriceResponse, Timeframe } from '@/types';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
-type Timeframe = 'Monthly' | 'Weekly' | 'Daily';
+import AssetChart from '@/components/AssetChart';
 
 const API_BASE_URL = 'https://seun-bot-4fb16422b74d.herokuapp.com';
 
@@ -36,8 +35,6 @@ export default function AssetPage() {
     }
     return true;
   });
-  const [timeframe, setTimeframe] = useState<Timeframe>('Daily');
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -964,53 +961,7 @@ export default function AssetPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Chart Section - 65-70% (8 columns) */}
           <div className="lg:col-span-8">
-            <div className={`rounded-xl flex flex-col h-[500px] shadow-sm overflow-hidden ${isDark ? 'bg-[#0b111b] border border-white/5' : 'bg-white border border-gray-200'}`}>
-              <div className={`flex items-center justify-between border-b p-4 ${isDark ? 'border-white/5 bg-[#0f1520]' : 'border-gray-200 bg-slate-50'}`}>
-                <div className={`flex items-center gap-2 p-1 rounded-lg ${isDark ? 'bg-[#0f1520] border border-white/10' : 'bg-gray-200'}`}>
-                  {(['Monthly', 'Weekly', 'Daily', 'H4'] as Timeframe[]).map((tf) => (
-                    <button
-                      key={tf}
-                      onClick={() => setTimeframe(tf)}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
-                        timeframe === tf
-                          ? 'bg-teal-500 text-white shadow-sm'
-                          : isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-slate-900'
-                      }`}
-                    >
-                      {tf}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="size-2 rounded-full bg-[#0bda6c]"></span>
-                    <span className={`hidden md:inline text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Market Open</span>
-                  </div>
-                  <button 
-                    onClick={() => setIsFullscreen(!isFullscreen)}
-                    className={`hidden md:flex p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/5 text-gray-500' : 'hover:bg-slate-100 text-gray-600'}`}
-                    title="Toggle Fullscreen"
-                  >
-                    <span className="text-xl">{isFullscreen ? '✕' : '⛶'}</span>
-                  </button>
-                </div>
-              </div>
-              <div className={`relative flex-1 w-full h-full p-4 ${isDark ? 'bg-[#0a0f16]' : 'bg-slate-50'}`}>
-                {/* Grid Background */}
-                <div className="absolute inset-0 grid grid-cols-6 grid-rows-4 pointer-events-none">
-                  {Array.from({ length: 24 }).map((_, i) => (
-                    <div key={i} className="border-r border-b border-white/[0.03]"></div>
-                  ))}
-                </div>
-                {/* Chart Placeholder */}
-                <div className="relative h-full w-full flex items-center justify-center">
-                  <div className={`text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                    <p className="text-lg font-medium">The chart will show here</p>
-                    <p className="text-sm mt-2">TradingView integration coming soon</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AssetChart symbol={symbol} theme={isDark ? 'dark' : 'light'} />
           </div>
 
           {/* Signal Intelligence - 30-35% (4 columns) */}
@@ -1127,14 +1078,27 @@ export default function AssetPage() {
                         <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
                           <p className={`text-[10px] uppercase mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Current Price</p>
                           <p className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                            <span className="text-base align-middle">₦</span>{predictionData.currentPrice.toFixed(2)}
+                            {livePriceData?.isDataAvailable && livePriceData.data 
+                              ? `${asset.market === 'NGX' ? '₦' : '$'}${livePriceData.data.price.toLocaleString(undefined, {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2
+                                })}` 
+                              : predictionData?.currentPrice 
+                              ? `${asset.market === 'NGX' ? '₦' : '$'}${predictionData.currentPrice.toLocaleString(undefined, {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2
+                                })}` 
+                              : '-'}
                           </p>
                         </div>
                         
                         <div className={`p-3 rounded-lg border ${isDark ? 'bg-[#0f1520] border-white/5' : 'bg-white border-gray-200'}`}>
                           <p className={`text-[10px] uppercase mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Entry Price</p>
                           <p className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                            <span className="text-base align-middle">₦</span>{predictionData.suggestedEntry.toFixed(2)}
+                            <span className="text-base align-middle">₦</span>{predictionData.suggestedEntry.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
                           </p>
                         </div>
                         
@@ -1995,28 +1959,6 @@ export default function AssetPage() {
           </div>
         </div>
       </main>
-
-      {/* Fullscreen Chart Modal */}
-      {isFullscreen && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <h3 className="text-white text-lg font-bold">{asset.name} - {timeframe} Chart</h3>
-            <button
-              onClick={() => setIsFullscreen(false)}
-              className="p-2 hover:bg-white/10 rounded-lg text-white transition-colors"
-            >
-              <span className="text-2xl">✕</span>
-            </button>
-          </div>
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center text-gray-400">
-              <p className="text-2xl font-medium">The chart will show here</p>
-              <p className="text-lg mt-4">TradingView integration coming soon</p>
-              <p className="text-sm mt-2">Timeframe: {timeframe}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Footer */}
       <footer className={`mt-auto border-t py-6 ${isDark ? 'border-white/5 bg-[#0b0f16]' : 'border-gray-200 bg-white'}`}>
