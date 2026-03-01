@@ -37,15 +37,15 @@ export default function AssetChart({
             ? 'border-gray-800' 
             : 'border-gray-200'
         }`}>
-          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-0">
+          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-0 lg:mb-0">
             <h2 className={`text-lg sm:text-xl md:text-2xl font-bold ${
               isDark ? 'text-white' : 'text-gray-900'
             }`}>Price Chart</h2>
             
-            {/* Fullscreen Toggle - Desktop */}
+            {/* Fullscreen Toggle - Medium screens only */}
             <button
               onClick={() => setIsFullscreen(true)}
-              className={`hidden sm:block p-2 rounded-lg transition-colors ${
+              className={`hidden sm:block lg:hidden p-2 rounded-lg transition-colors ${
                 isDark 
                   ? 'hover:bg-white/5 text-gray-400 hover:text-white' 
                   : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
@@ -56,10 +56,44 @@ export default function AssetChart({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               </svg>
             </button>
+
+            {/* Timeframe + Fullscreen - Desktop only */}
+            <div className="hidden lg:flex items-center gap-3">
+              <div className="flex gap-2">
+                {timeframes.map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                      timeframe === tf
+                        ? 'bg-teal-600 text-white'
+                        : isDark 
+                          ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setIsFullscreen(true)}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDark 
+                    ? 'hover:bg-white/5 text-gray-400 hover:text-white' 
+                    : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
+                }`}
+                title="Fullscreen"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </button>
+            </div>
           </div>
           
-          {/* Timeframe Selector */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Timeframe Selector - Mobile & Medium screens */}
+          <div className="flex items-center gap-2 sm:gap-3 lg:hidden">
             <div className="flex gap-1.5 sm:gap-2 flex-1">
               {timeframes.map((tf) => (
                 <button
@@ -78,7 +112,7 @@ export default function AssetChart({
               ))}
             </div>
 
-            {/* Fullscreen Toggle - Mobile */}
+            {/* Fullscreen Toggle - Mobile only */}
             <button
               onClick={() => setIsFullscreen(true)}
               className={`sm:hidden p-1.5 rounded-lg transition-colors flex-shrink-0 ${
