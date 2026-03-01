@@ -11,7 +11,12 @@ export default function ProfilePage() {
   useEffect(() => {
     router.push('/');
   }, [router]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // Open on desktop, closed on mobile
+    }
+    return true;
+  });
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isDark, setIsDark] = useState(true);

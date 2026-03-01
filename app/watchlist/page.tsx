@@ -15,7 +15,12 @@ export default function WatchlistPage() {
     }
     return true;
   });
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // Open on desktop, closed on mobile
+    }
+    return true;
+  });
 
   // Save theme to localStorage when it changes
   useEffect(() => {

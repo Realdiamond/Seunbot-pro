@@ -8,7 +8,12 @@ import remarkGfm from 'remark-gfm';
 
 export default function ChatPage() {
   const [chatInput, setChatInput] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // Open on desktop, closed on mobile
+    }
+    return true;
+  });
   const [isTyping, setIsTyping] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {

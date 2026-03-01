@@ -40,7 +40,12 @@ type SignalFilter = 'All' | 'BUY' | 'SELL' | 'HOLD';
 export default function Home() {
   const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // Open on desktop, closed on mobile
+    }
+    return true;
+  });
   const [signalFilter, setSignalFilter] = useState<SignalFilter>('All');
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
